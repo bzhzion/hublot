@@ -201,37 +201,50 @@ button:focus-visible,
 .nav-toggle {
   display: none;
   align-items: center;
+  justify-content: center;
+  position: relative;
   margin-left: auto;
-  padding: 0.5rem 0.6rem;
+  width: 40px;
+  height: 34px;
+  padding: 0;
   border: 1px solid rgba(202, 160, 63, 0.4);
   border-radius: var(--radius-sm);
   background: transparent;
   cursor: pointer;
 }
 
-.nav-toggle-bars {
-  display: inline-flex;
-  flex-direction: column;
-  gap: 4px;
-  width: 20px;
+/* Closed state reads as a little swell of waves rather than a generic
+   three-bar burger, open state fades to a plain close cross. */
+.nav-toggle-icon {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  fill: none;
+  stroke: var(--brass-light);
+  stroke-width: 2;
+  stroke-linecap: round;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-.nav-toggle-bars i {
-  display: block;
-  height: 2px;
-  background: var(--brass-light);
-  border-radius: 2px;
-  transition: transform 0.2s ease, opacity 0.2s ease;
-}
-
-.nav-toggle[aria-expanded="true"] .nav-toggle-bars i:nth-child(1) {
-  transform: translateY(6px) rotate(45deg);
-}
-.nav-toggle[aria-expanded="true"] .nav-toggle-bars i:nth-child(2) {
+.nav-toggle-icon--close {
   opacity: 0;
+  transform: scale(0.8);
 }
-.nav-toggle[aria-expanded="true"] .nav-toggle-bars i:nth-child(3) {
-  transform: translateY(-6px) rotate(-45deg);
+
+.nav-toggle[aria-expanded="true"] .nav-toggle-icon--waves {
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+.nav-toggle[aria-expanded="true"] .nav-toggle-icon--close {
+  opacity: 1;
+  transform: scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-toggle-icon {
+    transition: opacity 0.01ms;
+  }
 }
 
 .topnav {
