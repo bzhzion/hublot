@@ -1,0 +1,20 @@
+# Squelette - voir le TODO dans Breizhzion.Hublot.yaml avant toute soumission
+# reelle.
+
+PackageIdentifier: Breizhzion.Hublot
+PackageVersion: 0.1.0
+PackageLocale: en-US
+Publisher: BREIZHZION
+PublisherUrl: https://breizhzion.com
+PackageName: Hublot
+PackageUrl: https://github.com/bzhzion/hublot
+License: LicenseRef-BZ-1.1
+LicenseUrl: https://github.com/bzhzion/hublot/blob/main/LICENSE.md
+ShortDescription: Broker + CLI to drive a single shared visible Chromium window across multiple AI agents.
+Tags:
+  - browser
+  - automation
+  - cli
+  - playwright
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0

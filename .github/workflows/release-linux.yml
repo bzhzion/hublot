@@ -1,0 +1,97 @@
+name: Release Linux (SEA + .deb)
+
+# Meme declencheur que release-windows.yml : un tag vX.Y.Z publie les deux
+# plateformes dans la meme Release GitHub sans avoir a se souvenir de lancer
+# l'un puis l'autre (motif repris de bzhzion/beammeup).
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag a builder (ex: v0.2.0), vide = dernier tag vX.Y.Z'
+        required: false
+        default: ''
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Version depuis le tag
+        id: version
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          REF="$INPUT_TAG"
+          [ -z "$REF" ] && REF="$GITHUB_REF_NAME"
+          case "$REF" in
+            v*.*.*) ;;
+            *) REF=$(git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*') ;;
+          esac
+          VERSION="${REF#v}"
+          echo "Version: $VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          sed -i "s/\"version\": \"[0-9]*\.[0-9]*\.[0-9]*\"/\"version\": \"$VERSION\"/" package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Installer les dependances npm
+        run: npm ci
+
+      - name: Build + package (SEA)
+        run: npm run package
+
+      - name: Construire le paquet .deb minimal
+        id: deb
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -e
+          PKG_DIR="pkgroot"
+          rm -rf "$PKG_DIR"
+          mkdir -p "$PKG_DIR/DEBIAN" "$PKG_DIR/usr/bin"
+          cp build/hublot "$PKG_DIR/usr/bin/hublot"
+          chmod 755 "$PKG_DIR/usr/bin/hublot"
+          cat > "$PKG_DIR/DEBIAN/control" <<EOF
+          Package: hublot
+          Version: $VERSION
+          Section: utils
+          Priority: optional
+          Architecture: amd64
+          Maintainer: BREIZHZION <contact@breizhzion.com>
+          Description: Broker + CLI pour piloter un Chromium visible partage entre agents
+           Hublot expose un unique navigateur Chromium visible via un broker local et un
+           CLI, chaque agent operant dans son propre onglet identifie par un label.
+          EOF
+          DEB_NAME="hublot_${VERSION}_amd64.deb"
+          dpkg-deb --build --root-owner-group "$PKG_DIR" "$DEB_NAME"
+          echo "deb_name=$DEB_NAME" >> "$GITHUB_OUTPUT"
+
+      # TODO (publication apt) : bzhzion/beammeup publie ses .deb sur
+      # apt.breizhzion.com via un workflow separe (publish-apt.yml,
+      # declenchement manuel uniquement) qui pousse le paquet a axolotl via
+      # une cle SSH dediee restreinte cote serveur par une commande forcee
+      # dans authorized_keys (limitee a un paquet nomme "beammeup", sans
+      # shell ni lecture de fichiers - voir docs/beammeup.md du repo admin).
+      # Hublot n'a pas encore cet acces SSH configure. Quand il le sera,
+      # reprendre exactement ce pattern (cle dediee + commande forcee,
+      # jamais une cle d'acces general) dans un publish-apt.yml equivalent
+      # plutot que d'improviser un chemin de publication ad hoc ici.
+
+      - name: GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          files: |
+            ${{ steps.deb.outputs.deb_name }}

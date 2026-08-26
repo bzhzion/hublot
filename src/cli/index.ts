@@ -11,8 +11,39 @@ import { isBrokerRunning, sendRequest } from './client';
 import { BrokerResponse } from '../shared/types';
 import { HUBLOT_HOME, BROKER_LOG_FILE } from '../shared/paths';
 
+// Détection best-effort du mode "exécutable unique" (Node SEA). Le module
+// `node:sea` n'existe que sur les runtimes récents (Node 20.12+/21.7+) : sur
+// une distribution npm-install classique avec un Node plus ancien, l'appel
+// échoue et on retombe sur le chemin habituel (spawn d'un fichier séparé).
+function runningAsSea(): boolean {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const sea = require('node:sea') as { isSea: () => boolean };
+    return sea.isSea();
+  } catch {
+    return false;
+  }
+}
+
 const program = new Command();
 program.name('hublot').description('Broker + CLI pour un Chromium visible partagé entre agents').version('0.1.0');
+
+// Commande cachée, jamais documentée ni appelée à la main : c'est le point
+// d'entrée que le binaire empaqueté (SEA) utilise pour lancer la logique
+// broker DANS le process qu'il vient de spawn (voir "start" ci-dessous). Le
+// module broker n'existe pas en fichier séparé une fois embarqué dans le
+// binaire, donc on ne peut pas le spawn par chemin de fichier comme dans la
+// distribution npm-install classique.
+program
+  .command('__broker', { hidden: true })
+  .description('(interne, ne pas utiliser) lance la logique broker dans le process courant')
+  .action(async () => {
+    const { runBroker } = await import('../broker');
+    await runBroker().catch((err: Error) => {
+      console.error('[hublot] échec au démarrage du broker:', err);
+      process.exit(1);
+    });
+  });
 
 function printResultAndExit(res: BrokerResponse): never {
   if (!res.ok) {
@@ -38,10 +69,15 @@ program
       console.log('Le broker Hublot tourne déjà.');
       return;
     }
-    const brokerScript = path.join(__dirname, '..', 'broker', 'index.js');
+    // Distribution npm-install classique : on spawn le fichier compilé
+    // dist/broker/index.js séparément. Binaire empaqueté (SEA) : ce fichier
+    // n'existe pas à côté de l'exécutable, on respawn donc l'exécutable
+    // lui-même avec la commande cachée "__broker", qui exécute la même
+    // logique dans le nouveau process.
+    const brokerArgs = runningAsSea() ? ['__broker'] : [path.join(__dirname, '..', 'broker', 'index.js')];
     fs.mkdirSync(HUBLOT_HOME, { recursive: true });
     const logFd = fs.openSync(BROKER_LOG_FILE, 'a');
-    const child = spawn(process.execPath, [brokerScript], {
+    const child = spawn(process.execPath, brokerArgs, {
       detached: true,
       stdio: ['ignore', logFd, logFd],
       windowsHide: false,

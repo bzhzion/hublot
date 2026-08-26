@@ -1,0 +1,68 @@
+name: Publier sur winget
+
+# Calque sur bzhzion/beammeup/.github/workflows/publish-winget.yml.
+# Volontairement decouple du build (release-windows.yml) : declenchement
+# manuel uniquement, jamais automatique - publier sur winget ouvre une pull
+# request sur microsoft/winget-pkgs, depot tiers a tres fort trafic revu par
+# des mainteneurs externes. Pas quelque chose qui doit partir a chaque tag,
+# surtout pendant une serie de builds de test.
+#
+# PREREQUIS non remplis a ce jour (voir manifests/b/Breizhzion/Hublot/ et le
+# README, section Distribution) :
+#   - Une premiere soumission MANUELLE a microsoft/winget-pkgs doit avoir ete
+#     faite et mergee (wingetcreate new, PR ouverte a la main). Tant que ce
+#     n'est pas fait, `wingetcreate update` echoue puisqu'il n'y a rien a
+#     mettre a jour.
+#   - Le secret WINGET_PAT (token GitHub avec droits sur le fork
+#     personnel + PR vers microsoft/winget-pkgs) n'est pas encore configure
+#     sur ce depot.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version a publier (ex: 0.2.0), doit deja avoir une Release GitHub'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  winget:
+    name: Mettre a jour le manifest Breizhzion.Hublot
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Retrouver l'installeur de la release
+        id: release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          $tag = "v$($env:VERSION)"
+          $asset = (gh release view $tag --repo ${{ github.repository }} --json assets -q '.assets[].name' `
+                    | Where-Object { $_ -like '*-setup.exe' } | Select-Object -First 1)
+          if (-not $asset) { throw "Aucun executable trouve dans la release $tag" }
+          Write-Host "Tag: $tag / asset: $asset"
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "asset=$asset" >> $env:GITHUB_OUTPUT
+
+      # Repo public : l'asset de la Release GitHub est deja une URL stable et
+      # publiquement accessible, pas besoin de bucket/CDN intermediaire.
+      - name: wingetcreate update
+        env:
+          WINGET_PAT: ${{ secrets.WINGET_PAT }}
+          VERSION: ${{ inputs.version }}
+          INSTALLER_URL: https://github.com/${{ github.repository }}/releases/download/${{ steps.release.outputs.tag }}/${{ steps.release.outputs.asset }}
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri "https://aka.ms/wingetcreate/latest" -OutFile "wingetcreate.exe"
+          .\wingetcreate.exe update Breizhzion.Hublot `
+            --version $env:VERSION `
+            --urls "$env:INSTALLER_URL" `
+            --token $env:WINGET_PAT `
+            --submit `
+            --no-open

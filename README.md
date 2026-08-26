@@ -64,7 +64,7 @@ hublot start   ──spawn détaché──▶  broker (Node.js)
 ### Persistance
 
 - **Profil navigateur** : `%LOCALAPPDATA%/hublot/profile` (cookies,
-  autofill, mots de passe enregistrés — tout ça vient gratuitement d'un
+  autofill, mots de passe enregistrés : tout ça vient gratuitement d'un
   profil Chromium persistant classique, rien à réinventer).
 - **Table des onglets** : `%LOCALAPPDATA%/hublot/tabs.json`, réécrite à
   chaque changement. Au redémarrage du broker, les onglets connus sont
@@ -92,7 +92,7 @@ npx playwright install chromium
 ```
 
 (TODO : le code essaie d'abord `channel: 'chrome'`, puis `channel: 'msedge'`,
-puis se rabat sur le Chromium Playwright — ce dernier cas n'a pas été testé
+puis se rabat sur le Chromium Playwright ; ce dernier cas n'a pas été testé
 en profondeur, faute de binaire disponible sur la machine de développement.)
 
 ## Commandes
@@ -142,6 +142,105 @@ seulement la tâche en cours), et le réutiliser pour toute la durée de son
 travail plutôt que d'ouvrir un nouvel onglet à chaque commande. Objectif :
 plusieurs agents en parallèle ne se marchent jamais dessus, même sur la
 même machine.
+
+## Distribution (exécutable unique)
+
+Hublot se distribue comme son outil sœur `beammeup` : un seul exécutable
+téléchargeable (`hublot.exe` sous Windows, `hublot` sous Linux), sans
+installation Node.js préalable sur la machine cible. Contrairement à
+BeamMeUp (Rust/Tauri), Hublot est du Node.js et utilise donc le mode natif
+Node.js **Single Executable Applications (SEA)**, disponible depuis Node 20
+(marqué expérimental sur certaines versions ; testé ici avec succès sur
+Node 25).
+
+### Build local
+
+```bash
+npm install
+npm run package
+```
+
+`npm run package` (défini dans `package.json`) enchaîne :
+
+1. `npm run build` (compilation TypeScript classique, inchangée).
+2. `node scripts/package-sea.mjs`, qui :
+   - bundle `dist/cli/index.js` (+ tout ce qu'il importe, y compris le
+     broker et ses dépendances `node_modules`) en un seul fichier
+     CommonJS via **esbuild** (`build/sea-bundle.cjs`) : SEA exige un point
+     d'entrée autonome, sans résolution de `node_modules` au runtime ;
+   - génère la config et le blob SEA via
+     `node --experimental-sea-config` (`build/sea-config.json`,
+     `build/sea-prep.blob`) ;
+   - copie le binaire `node` courant pour servir de socle
+     (`build/hublot.exe` / `build/hublot`) ;
+   - injecte le blob dans cette copie via **postject** (API
+     programmatique, pas la CLI).
+
+Résultat testé localement : `build/hublot.exe status` répond
+`Broker Hublot: arrêté.` sans avoir Node.js installé sur la machine (le
+binaire l'embarque). Aucune dépendance à `npm install` sur la machine cible.
+
+### Piège résolu : `hublot start` en mode empaqueté
+
+`hublot start` spawn normalement un second process Node en pointant vers le
+fichier compilé `dist/broker/index.js`. Un exécutable SEA n'a pas ce fichier
+à côté de lui (tout est dans le blob embarqué) : spawner
+`process.execPath` avec un chemin de fichier ne fonctionnerait pas. Le CLI
+détecte ce mode via `node:sea`&nbsp;`isSea()` et, si c'est le cas, respawn
+l'exécutable lui-même avec une commande cachée `__broker` (jamais listée
+dans `--help`, jamais destinée à un usage manuel) qui exécute la même
+logique broker (`runBroker()`, exportée depuis `src/broker/index.ts`) dans
+le nouveau process. La distribution npm-install classique (`node
+dist/cli/index.js`) n'est pas affectée : elle continue de spawner
+`dist/broker/index.js` comme avant.
+
+### Limite connue du bundling
+
+`playwright-core` référence conditionnellement le protocole BiDi
+(`chromium-bidi`), jamais exercé par le chemin CDP qu'Hublot utilise
+(`channel: 'chrome'`/`'msedge'`). Le paquet `chromium-bidi` n'étant pas
+installé, il est marqué `external` dans la config esbuild
+(`scripts/package-sea.mjs`) : le `require()` correspondant reste inerte
+dans le bundle et ne peut échouer qu'au runtime, seulement si ce chemin
+BiDi était un jour exercé (pas le cas aujourd'hui).
+
+### CI de release
+
+- `.github/workflows/ci.yml` : build + packaging SEA sur Windows et Linux à
+  chaque push/PR (vérification de compilation, pas de publication).
+- `.github/workflows/release-windows.yml` : déclenché sur tag `vX.Y.Z`,
+  build + package + publie une Release GitHub avec l'exécutable en asset.
+  **Pas de signature Azure Trusted Signing pour l'instant** : les secrets
+  (`AZURE_TENANT_ID`/`AZURE_CLIENT_ID`/`AZURE_CLIENT_SECRET`) ne sont pas
+  configurés côté Hublot. Un TODO explicite dans ce fichier indique où
+  ajouter l'étape de signature (identique à celle de `beammeup`) une fois
+  ces secrets créés. Sans signature, Windows SmartScreen affichera un
+  avertissement « éditeur inconnu » au premier lancement.
+- `.github/workflows/release-linux.yml` : même déclencheur, construit un
+  `.deb` minimal (juste le binaire SEA copié dans `/usr/bin/hublot`, pas de
+  dépendances) et le publie dans la même Release GitHub.
+- `.github/workflows/publish-winget.yml` : squelette calqué sur celui de
+  `beammeup`, déclenchement manuel uniquement. **Prérequis non rempli** :
+  la première soumission à `microsoft/winget-pkgs` doit être faite à la
+  main (`wingetcreate new`, PR ouverte et mergée) avant que ce workflow
+  puisse fonctionner (voir le squelette de manifeste ci-dessous).
+- `.github/workflows/publish-apt.yml` : squelette calqué sur celui de
+  `beammeup`, **ne fonctionne pas tel quel**. beammeup publie via une clé
+  SSH dédiée et restreinte côté serveur (commande forcée dans
+  `authorized_keys` sur axolotl, limitée à un paquet nommé `beammeup`, sans
+  shell ni lecture de fichiers). Hublot n'a pas encore cet accès configuré ;
+  même discipline à reproduire (clé à part, jamais réutiliser celle de
+  beammeup) avant d'activer ce workflow.
+
+### Manifeste winget (squelette)
+
+`manifests/b/Breizhzion/Hublot/0.1.0/` contient un squelette de manifeste
+winget à 3 fichiers (version / installer / locale en-US), au format habituel
+de `microsoft/winget-pkgs`. **Non soumis, non validé** : chaque fichier
+contient un commentaire décrivant ce qu'il reste à faire (premier tag +
+Release signée, `wingetcreate new` pour générer/valider proprement, PR
+manuelle sur `microsoft/winget-pkgs`). Une fois cette première PR mergée,
+`publish-winget.yml` peut prendre le relais à chaque nouveau tag.
 
 ## Limites connues (v0.1)
 

@@ -1,0 +1,94 @@
+name: Release Windows (SEA)
+
+# Meme declencheur que beammeup/.github/workflows/release-windows.yml : un
+# tag vX.Y.Z construit et publie une Release GitHub avec l'executable en
+# asset. Packaging via Node.js Single Executable Applications (SEA), pas de
+# toolchain Rust/Tauri ici.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag a builder (ex: v0.2.0), vide = dernier tag vX.Y.Z'
+        required: false
+        default: ''
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    # windows-latest (GitHub-hosted), pas un runner self-hosted : ce repo est
+    # destine a devenir public, meme raisonnement que beammeup (un runner
+    # self-hosted exposerait l'infrastructure a un risque d'execution de code
+    # non maitrise sur un repo public).
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Version depuis le tag
+        id: version
+        shell: pwsh
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          $ref = $env:INPUT_TAG
+          if (-not $ref) { $ref = $env:GITHUB_REF_NAME }
+          if ($ref -notlike 'v*.*.*') { $ref = (git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*') }
+          $version = $ref.TrimStart('v')
+          Write-Host "Version: $version"
+          "version=$version" >> $env:GITHUB_OUTPUT
+          # Version patchee a la volee, jamais commitee : le depot ne porte
+          # que la version de developpement, le tag fait foi (meme motif que
+          # beammeup, voir docs/mobile-app-releases.md du repo admin).
+          (Get-Content package.json -Raw) -replace '"version": "\d+\.\d+\.\d+"', "`"version`": `"$version`"" | Set-Content package.json -NoNewline
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Installer les dependances npm
+        run: npm ci
+
+      - name: Build + package (SEA)
+        run: npm run package
+
+      - name: Renommer l'executable avec la version
+        id: artifact
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          $name = "hublot-$env:VERSION-x64-setup.exe"
+          Copy-Item build/hublot.exe "build/$name"
+          "name=$name" >> $env:GITHUB_OUTPUT
+
+      # TODO (signature) : contrairement a beammeup (azure/artifact-signing-action,
+      # secrets AZURE_TENANT_ID/AZURE_CLIENT_ID/AZURE_CLIENT_SECRET deja
+      # configures sur ce repo-la), Hublot n'a PAS encore les secrets Azure
+      # Trusted Signing configures. Ne pas deviner une config qui echouerait
+      # silencieusement ou bloquerait le workflow : quand les secrets seront
+      # crees (meme compte de signature "breizhzion-public" que beammeup, a
+      # priori), ajouter ici une etape identique a celle de
+      # bzhzion/beammeup/.github/workflows/release-windows.yml avant l'etape
+      # "GitHub Release" ci-dessous. Sans signature, Windows SmartScreen
+      # affichera un avertissement "editeur inconnu" au premier lancement de
+      # l'executable telecharge - attendu et documente dans le README tant
+      # que ce TODO n'est pas leve.
+
+      - name: GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Hublot ${{ steps.version.outputs.version }}
+          draft: false
+          prerelease: false
+          fail_on_unmatched_files: true
+          files: |
+            build/${{ steps.artifact.outputs.name }}

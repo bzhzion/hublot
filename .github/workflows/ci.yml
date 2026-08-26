@@ -1,0 +1,47 @@
+name: CI
+
+# Vérification de compilation sur chaque push/PR : build TypeScript + un
+# essai de packaging SEA sur les deux plateformes cibles (Windows/Linux).
+# Volontairement léger (pas de build Node.js à cross-compiler comme pour
+# Rust) : le vrai artefact publié reste produit par les workflows de release
+# déclenchés par tag.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: build + package (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Installer les dependances npm
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Packager en executable unique (SEA)
+        run: node scripts/package-sea.mjs
+
+      - name: Verifier que l'executable repond
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            ./build/hublot.exe status
+          else
+            ./build/hublot status
+          fi

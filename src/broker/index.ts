@@ -277,7 +277,12 @@ async function shutdown(code: number): Promise<void> {
   process.exit(code);
 }
 
-async function main(): Promise<void> {
+// Exportée (plutôt qu'un simple `main()` local) pour pouvoir être appelée en
+// process depuis le CLI : c'est le chemin utilisé par l'exécutable unique
+// (SEA), qui ne peut pas spawn un fichier dist/broker/index.js séparé
+// puisqu'il n'existe qu'en tant que blob embarqué dans le binaire. Voir la
+// commande cachée "__broker" dans cli/index.ts.
+export async function runBroker(): Promise<void> {
   ensureDir(HUBLOT_HOME);
   const server = startServer();
   context = await launchContext();
@@ -299,7 +304,15 @@ async function main(): Promise<void> {
   server.on('close', () => shutdown(0));
 }
 
-main().catch((err) => {
-  console.error('[hublot] échec au démarrage du broker:', err);
-  process.exit(1);
-});
+// Point d'entrée classique : ce fichier compilé (dist/broker/index.js) est
+// spawné directement par `node` dans la distribution npm-install habituelle
+// (voir cli/index.ts, cas non-SEA). `require.main === module` garde cet
+// auto-démarrage réservé à cet usage : quand ce module est simplement importé
+// (empaqueté dans le bundle SEA de la commande "__broker"), rien ne doit se
+// lancer tout seul au chargement.
+if (require.main === module) {
+  runBroker().catch((err) => {
+    console.error('[hublot] échec au démarrage du broker:', err);
+    process.exit(1);
+  });
+}

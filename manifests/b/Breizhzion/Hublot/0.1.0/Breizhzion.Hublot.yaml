@@ -1,0 +1,26 @@
+# Squelette de manifeste winget pour Hublot, sur le modele de
+# bzhzion/beammeup (voir docs/beammeup.md du repo admin : premiere
+# soumission manuelle a microsoft/winget-pkgs, relais automatique par CI
+# ensuite via wingetcreate update). NE PAS SOUMETTRE tel quel : ce fichier
+# n'a pas ete valide par `winget validate` / `wingetcreate` et la version
+# 0.1.0 n'a pas encore de Release GitHub avec un executable signe.
+#
+# Étapes avant soumission reelle (voir README, section Distribution) :
+#   1. Avoir un premier tag vX.Y.Z avec une Release GitHub contenant
+#      hublot-X.Y.Z-x64-setup.exe (produit par release-windows.yml).
+#      Ideallement signe (Azure Trusted Signing) - winget accepte un
+#      executable non signe mais SmartScreen avertira l'utilisateur.
+#   2. `wingetcreate new <InstallerUrl>` pour generer/valider les 3 fichiers
+#      de maniere interactive plutot que de s'appuyer aveuglement sur ce
+#      squelette.
+#   3. Ouvrir la PR sur microsoft/winget-pkgs a la main (comme pour
+#      BeamMeUp, PR microsoft/winget-pkgs#423340).
+#   4. Une fois mergee, un futur workflow publish-winget.yml (calque sur
+#      celui de beammeup) pourra automatiser les mises a jour de version a
+#      chaque tag via `wingetcreate update`.
+
+PackageIdentifier: Breizhzion.Hublot
+PackageVersion: 0.1.0
+DefaultLocale: en-US
+ManifestType: version
+ManifestVersion: 1.6.0
