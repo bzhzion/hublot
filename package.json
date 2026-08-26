@@ -1,0 +1,25 @@
+{
+  "name": "hublot",
+  "version": "0.1.0",
+  "description": "Broker + CLI pour piloter un unique Chromium visible et partage entre plusieurs agents, chacun scope a son propre onglet.",
+  "private": true,
+  "license": "LicenseRef-BZ-1.1",
+  "bin": {
+    "hublot": "./dist/cli/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p .",
+    "dev": "tsc -p . --watch"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "playwright-core": "^1.47.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "typescript": "^5.5.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,181 @@
+#!/usr/bin/env node
+// CLI Hublot : invoqué par n'importe quel agent depuis son outil Bash/PowerShell
+// standard. Parle au broker via le client IPC, ne contient aucune logique
+// Playwright elle-même.
+
+import { spawn } from 'child_process';
+import * as fs from 'fs';
+import * as path from 'path';
+import { Command } from 'commander';
+import { isBrokerRunning, sendRequest } from './client';
+import { BrokerResponse } from '../shared/types';
+import { HUBLOT_HOME, BROKER_LOG_FILE } from '../shared/paths';
+
+const program = new Command();
+program.name('hublot').description('Broker + CLI pour un Chromium visible partagé entre agents').version('0.1.0');
+
+function printResultAndExit(res: BrokerResponse): never {
+  if (!res.ok) {
+    console.error(`Erreur: ${res.error}`);
+    process.exit(1);
+  }
+  process.exit(0);
+}
+
+async function callBroker(req: Parameters<typeof sendRequest>[0]): Promise<BrokerResponse> {
+  if (!(await isBrokerRunning())) {
+    console.error('Le broker Hublot ne répond pas. Lancer "hublot start" d\'abord.');
+    process.exit(1);
+  }
+  return sendRequest(req);
+}
+
+program
+  .command('start')
+  .description('Démarre le broker (Chromium visible + profil persistant) si pas déjà lancé')
+  .action(async () => {
+    if (await isBrokerRunning()) {
+      console.log('Le broker Hublot tourne déjà.');
+      return;
+    }
+    const brokerScript = path.join(__dirname, '..', 'broker', 'index.js');
+    fs.mkdirSync(HUBLOT_HOME, { recursive: true });
+    const logFd = fs.openSync(BROKER_LOG_FILE, 'a');
+    const child = spawn(process.execPath, [brokerScript], {
+      detached: true,
+      stdio: ['ignore', logFd, logFd],
+      windowsHide: false,
+    });
+    child.unref();
+
+    const deadline = Date.now() + 15000;
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 500));
+      if (await isBrokerRunning()) {
+        console.log('Broker Hublot démarré.');
+        return;
+      }
+    }
+    console.error('Le broker ne répond pas après 15s. Vérifier %LOCALAPPDATA%/hublot/broker.log ou relancer manuellement.');
+    process.exit(1);
+  });
+
+program
+  .command('stop')
+  .description('Arrête le broker et ferme Chromium')
+  .action(async () => {
+    if (!(await isBrokerRunning())) {
+      console.log('Le broker Hublot ne tourne pas.');
+      return;
+    }
+    await sendRequest({ cmd: 'stop' });
+    console.log('Arrêt du broker demandé.');
+  });
+
+program
+  .command('status')
+  .alias('list')
+  .description('Affiche l\'état du broker et la liste des onglets ouverts')
+  .action(async () => {
+    if (!(await isBrokerRunning())) {
+      console.log('Broker Hublot: arrêté.');
+      return;
+    }
+    const res = await callBroker({ cmd: 'status' });
+    if (!res.ok) return printResultAndExit(res);
+    console.log('Broker Hublot: en ligne.');
+    if (!res.tabs || res.tabs.length === 0) {
+      console.log('Aucun onglet ouvert.');
+      return;
+    }
+    for (const tab of res.tabs) {
+      console.log(`${tab.label}\t${tab.tabId}\t${tab.url}`);
+    }
+  });
+
+program
+  .command('open')
+  .requiredOption('--label <label>', 'identifiant de l\'onglet (par agent)')
+  .option('--url <url>', 'URL à charger à l\'ouverture')
+  .description('Ouvre un nouvel onglet pour ce label, ou réutilise l\'existant')
+  .action(async (opts) => {
+    const res = await callBroker({ cmd: 'open', label: opts.label, url: opts.url });
+    if (!res.ok) return printResultAndExit(res);
+    console.log(res.message ?? 'ok');
+    if (res.tabs) for (const t of res.tabs) console.log(`${t.label}\t${t.tabId}\t${t.url}`);
+  });
+
+program
+  .command('navigate')
+  .requiredOption('--label <label>', 'label de l\'onglet')
+  .requiredOption('--url <url>', 'URL à charger')
+  .description('Navigue vers une URL dans l\'onglet du label')
+  .action(async (opts) => {
+    const res = await callBroker({ cmd: 'navigate', label: opts.label, url: opts.url });
+    printResultAndExit(res);
+  });
+
+program
+  .command('click')
+  .requiredOption('--label <label>', 'label de l\'onglet')
+  .requiredOption('--selector <selector>', 'sélecteur CSS Playwright')
+  .description('Clique sur un élément')
+  .action(async (opts) => {
+    const res = await callBroker({ cmd: 'click', label: opts.label, selector: opts.selector });
+    printResultAndExit(res);
+  });
+
+program
+  .command('type')
+  .requiredOption('--label <label>', 'label de l\'onglet')
+  .requiredOption('--selector <selector>', 'sélecteur CSS Playwright')
+  .requiredOption('--text <text>', 'texte à saisir')
+  .description('Saisit du texte dans un champ')
+  .action(async (opts) => {
+    const res = await callBroker({ cmd: 'type', label: opts.label, selector: opts.selector, text: opts.text });
+    printResultAndExit(res);
+  });
+
+program
+  .command('extract')
+  .requiredOption('--label <label>', 'label de l\'onglet')
+  .option('--selector <selector>', 'sélecteur CSS Playwright (sinon tout le body)')
+  .description('Extrait le texte (innerText) d\'un élément ou de la page')
+  .action(async (opts) => {
+    const res = await callBroker({ cmd: 'extract', label: opts.label, selector: opts.selector });
+    if (!res.ok) return printResultAndExit(res);
+    console.log(res.text ?? '');
+  });
+
+program
+  .command('screenshot')
+  .requiredOption('--label <label>', 'label de l\'onglet')
+  .description('Prend une capture d\'écran et écrit le chemin du PNG en stdout')
+  .action(async (opts) => {
+    const res = await callBroker({ cmd: 'screenshot', label: opts.label });
+    if (!res.ok) return printResultAndExit(res);
+    console.log(res.path ?? '');
+  });
+
+program
+  .command('console')
+  .requiredOption('--label <label>', 'label de l\'onglet')
+  .description('Affiche les derniers logs console JS capturés pour cet onglet')
+  .action(async (opts) => {
+    const res = await callBroker({ cmd: 'console', label: opts.label });
+    if (!res.ok) return printResultAndExit(res);
+    for (const log of res.logs ?? []) {
+      console.log(`[${new Date(log.timestamp).toISOString()}] ${log.type}: ${log.text}`);
+    }
+  });
+
+program
+  .command('close')
+  .requiredOption('--label <label>', 'label de l\'onglet à fermer')
+  .description('Ferme l\'onglet de ce label')
+  .action(async (opts) => {
+    const res = await callBroker({ cmd: 'close', label: opts.label });
+    printResultAndExit(res);
+  });
+
+program.parseAsync(process.argv);
