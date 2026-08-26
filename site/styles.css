@@ -1,0 +1,877 @@
+/* ==========================================================================
+   Hublot: showcase site, "brass porthole" aesthetic
+   A round viewport into a shared browser: brass ring, riveted glass, deep
+   sea navy behind it. Refined rather than maximalist: one strong circular
+   motif (the porthole itself), reused at every scale instead of scattered
+   ornament.
+   ========================================================================== */
+
+:root {
+  /* Palette: night sea + engraved brass + a teal glass-glow. Warm off-white
+     text (parchment, not clinical white) to keep the "old ship's log" mood. */
+  --navy: #0a141c;
+  --navy-panel: #0f1e29;
+  --navy-deep: #061019;
+  --hull: #142735;
+
+  --brass: #caa03f;
+  --brass-light: #f1cf7d;
+  --brass-dark: #8a651f;
+  --teal: #3fb7ad;
+  --teal-deep: #0f6a67;
+  --copper: #c1663b;
+  --alert: #e2604a;
+
+  --text: #f3ecd8;
+  --text-dim: #c3b89a;
+  --text-faint: #7c7259;
+
+  --font-display: "Fraunces", "Iowan Old Style", "Palatino Linotype", serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", "Cascadia Code", monospace;
+
+  --radius-lg: 28px;
+  --radius-md: 18px;
+  --radius-sm: 10px;
+  --gap: clamp(1rem, 2vw, 1.75rem);
+  --content-w: 1180px;
+}
+
+/* -------------------------------------------------------------------------
+   Reset & base
+   ------------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: dark;
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--navy);
+  background-image:
+    radial-gradient(ellipse 900px 500px at 15% -10%, rgba(63, 183, 173, 0.08), transparent 60%),
+    radial-gradient(ellipse 700px 500px at 100% 20%, rgba(202, 160, 63, 0.07), transparent 60%);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.1;
+  margin: 0;
+}
+
+code,
+pre {
+  font-family: var(--font-mono);
+}
+
+code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.12em 0.4em;
+  border-radius: 4px;
+  font-size: 0.92em;
+  color: var(--brass-light);
+}
+
+pre {
+  margin: 0;
+  padding: 0.9rem 1.15rem;
+  background: var(--navy-deep);
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+  border-left: 4px solid var(--teal);
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  color: #cdeee9;
+}
+
+a {
+  color: var(--teal);
+}
+
+a:focus-visible,
+button:focus-visible,
+.pill:focus-visible {
+  outline: 3px solid var(--brass-light);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--brass-light);
+  color: #241a08;
+  font-family: var(--font-display);
+  font-weight: 700;
+  padding: 0.75rem 1.5rem;
+  z-index: 999;
+  border-radius: 0 0 var(--radius-sm) 0;
+}
+
+.skip-link:focus {
+  left: 0;
+}
+
+.accent-brass {
+  color: var(--brass-light);
+}
+.accent-teal {
+  color: var(--teal);
+}
+.accent-faint {
+  color: var(--text-faint);
+}
+
+/* -------------------------------------------------------------------------
+   Top bar: a riveted brass plaque, not a sidebar
+   ------------------------------------------------------------------------- */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: linear-gradient(180deg, var(--navy-panel), var(--navy));
+  border-bottom: 2px solid rgba(202, 160, 63, 0.25);
+  backdrop-filter: blur(6px);
+}
+
+.topbar-inner {
+  max-width: var(--content-w);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+  padding: 0.7rem 1.4rem;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.brand-mark {
+  width: 34px;
+  height: 34px;
+  filter: drop-shadow(0 0 6px rgba(202, 160, 63, 0.45));
+}
+
+.brand-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.35rem;
+  letter-spacing: 0.01em;
+}
+
+.nav-toggle {
+  display: none;
+  align-items: center;
+  margin-left: auto;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid rgba(202, 160, 63, 0.4);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+}
+
+.nav-toggle-bars {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 20px;
+}
+
+.nav-toggle-bars i {
+  display: block;
+  height: 2px;
+  background: var(--brass-light);
+  border-radius: 2px;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.nav-toggle[aria-expanded="true"] .nav-toggle-bars i:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+.nav-toggle[aria-expanded="true"] .nav-toggle-bars i:nth-child(2) {
+  opacity: 0;
+}
+.nav-toggle[aria-expanded="true"] .nav-toggle-bars i:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
+}
+
+.topnav {
+  display: flex;
+  align-items: center;
+  gap: 1.6rem;
+  margin-left: auto;
+  font-family: var(--font-body);
+  font-weight: 500;
+}
+
+.topnav a {
+  color: var(--text-dim);
+  text-decoration: none;
+  padding: 0.3rem 0.1rem;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.topnav a:hover,
+.topnav a:focus-visible {
+  color: var(--brass-light);
+  border-bottom-color: var(--brass);
+}
+
+.topnav-repo {
+  color: var(--text) !important;
+  background: rgba(202, 160, 63, 0.14);
+  border: 1px solid rgba(202, 160, 63, 0.4);
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem !important;
+}
+
+.topnav-repo:hover,
+.topnav-repo:focus-visible {
+  border-color: var(--brass-light);
+}
+
+/* -------------------------------------------------------------------------
+   Layout shell
+   ------------------------------------------------------------------------- */
+
+main {
+  max-width: var(--content-w);
+  margin: 0 auto;
+  padding: 0 1.4rem 3rem;
+}
+
+/* -------------------------------------------------------------------------
+   Hero
+   ------------------------------------------------------------------------- */
+
+.hero {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 2.6rem;
+  align-items: center;
+  padding: 3.2rem 0 2.6rem;
+  scroll-margin-top: 5rem;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin: 0 0 0.9rem;
+}
+
+.hero h1 {
+  font-size: clamp(2.3rem, 4.6vw, 3.5rem);
+  margin-bottom: 1.15rem;
+}
+
+.lede {
+  color: var(--text-dim);
+  font-size: 1.1rem;
+  max-width: 48ch;
+  margin: 0 0 1.9rem;
+}
+
+.cta-row {
+  display: flex;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.btn {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.02rem;
+  text-decoration: none;
+  padding: 0.7rem 1.6rem;
+  border-radius: 999px;
+  display: inline-block;
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.btn:hover,
+.btn:focus-visible {
+  filter: brightness(1.12);
+  transform: translateY(-1px);
+}
+
+.btn--primary {
+  background: linear-gradient(180deg, var(--brass-light), var(--brass));
+  color: #241a08;
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--text);
+  border: 2px solid var(--teal);
+}
+
+.btn--large {
+  font-size: 1.15rem;
+  padding: 0.9rem 2rem;
+}
+
+/* -------------------------------------------------------------------------
+   The porthole itself
+   ------------------------------------------------------------------------- */
+
+.hero-porthole {
+  display: flex;
+  justify-content: center;
+}
+
+.porthole-frame {
+  position: relative;
+  width: min(420px, 100%);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: linear-gradient(155deg, var(--brass-light) 0%, var(--brass) 45%, var(--brass-dark) 100%);
+  box-shadow:
+    0 0 0 6px rgba(0, 0, 0, 0.35) inset,
+    0 22px 60px rgba(0, 0, 0, 0.55);
+  padding: 16px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .porthole-frame {
+    animation: bob 7s ease-in-out infinite;
+  }
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.porthole-rivets {
+  position: absolute;
+  inset: 0;
+}
+
+.porthole-rivets span {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f4dda0, #5f430f 70%);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.porthole-rivets span:nth-child(1) {
+  top: 4%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.porthole-rivets span:nth-child(2) {
+  top: 21%;
+  right: 8%;
+}
+.porthole-rivets span:nth-child(3) {
+  top: 50%;
+  right: 2%;
+  transform: translateY(-50%);
+}
+.porthole-rivets span:nth-child(4) {
+  bottom: 21%;
+  right: 8%;
+}
+.porthole-rivets span:nth-child(5) {
+  bottom: 4%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.porthole-rivets span:nth-child(6) {
+  bottom: 21%;
+  left: 8%;
+}
+.porthole-rivets span:nth-child(7) {
+  top: 50%;
+  left: 2%;
+  transform: translateY(-50%);
+}
+.porthole-rivets span:nth-child(8) {
+  top: 21%;
+  left: 8%;
+}
+
+.porthole-glass {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 30%, #123c3d, #061f21 62%, #030f10 100%);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.55) inset, 0 0 40px rgba(63, 183, 173, 0.18) inset;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.porthole-glint {
+  position: absolute;
+  top: -20%;
+  left: -30%;
+  width: 70%;
+  height: 160%;
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.16), transparent 55%);
+  transform: rotate(8deg);
+  pointer-events: none;
+}
+
+.porthole-tabs {
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.85rem 0.9rem 0.4rem;
+  flex-wrap: wrap;
+}
+
+.porthole-tab {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--text-faint);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.22rem 0.55rem;
+  border-radius: 999px;
+}
+
+.porthole-tab--active {
+  color: #06201f;
+  background: var(--teal);
+}
+
+.porthole-readout {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: #c9f3ea;
+  padding: 0.5rem 1rem 1.1rem;
+  white-space: pre-wrap;
+  overflow: hidden;
+}
+
+.porthole-readout .caret {
+  display: inline-block;
+  width: 0.5em;
+  height: 0.95em;
+  background: var(--brass-light);
+  vertical-align: text-bottom;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .porthole-readout .caret {
+    animation: blink 1s steps(1) infinite;
+  }
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Panels (section shells)
+   ------------------------------------------------------------------------- */
+
+.panel {
+  background: var(--navy-panel);
+  border: 1px solid rgba(202, 160, 63, 0.16);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--gap);
+  overflow: hidden;
+  scroll-margin-top: 5.5rem;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1.15rem 1.7rem;
+  background: linear-gradient(90deg, rgba(202, 160, 63, 0.14), transparent);
+  border-bottom: 1px solid rgba(202, 160, 63, 0.16);
+}
+
+.panel-mark {
+  color: var(--brass);
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.panel-head h2 {
+  font-size: clamp(1.4rem, 2.4vw, 1.9rem);
+  color: var(--text);
+}
+
+.panel-body {
+  padding: 1.7rem 1.9rem 2.1rem;
+}
+
+.lede-small {
+  color: var(--text-dim);
+  max-width: 66ch;
+  margin: 0 0 1.4rem;
+}
+
+.two-col {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 2rem;
+  align-items: center;
+}
+
+.plate-list {
+  margin: 1rem 0 1.2rem;
+  padding-left: 1.3rem;
+  color: var(--text-dim);
+}
+
+.plate-list li {
+  margin-bottom: 0.7rem;
+}
+
+.plate-list strong {
+  color: var(--text);
+}
+
+/* -------------------------------------------------------------------------
+   Alert readout (problem section)
+   ------------------------------------------------------------------------- */
+
+.readout {
+  background: var(--navy-deep);
+  border-radius: var(--radius-sm);
+  padding: 1.1rem 1.3rem;
+  font-family: var(--font-mono);
+  font-size: 0.86rem;
+  border-left: 4px solid var(--alert);
+}
+
+.readout-line {
+  margin: 0 0 0.4rem;
+  word-break: break-word;
+}
+
+.readout-prompt {
+  color: var(--text-faint);
+  margin-right: 0.5rem;
+}
+
+.readout-line--fault {
+  color: var(--alert);
+}
+
+/* -------------------------------------------------------------------------
+   Porthole grid (architecture cards)
+   ------------------------------------------------------------------------- */
+
+.porthole-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.2rem;
+  margin: 0.4rem 0 1.6rem;
+}
+
+.porthole-card {
+  background: var(--hull);
+  border: 1px solid rgba(202, 160, 63, 0.14);
+  border-radius: var(--radius-md);
+  padding: 1.4rem 1.4rem 1.3rem;
+}
+
+.porthole-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--brass-light), var(--brass-dark) 75%);
+  color: #241a08;
+  font-size: 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.porthole-card h3 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.porthole-card p {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.95rem;
+}
+
+.axiom {
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+  color: var(--text);
+  background: linear-gradient(90deg, rgba(63, 183, 173, 0.14), transparent);
+  border-left: 4px solid var(--teal);
+  padding: 0.9rem 1.2rem;
+  margin: 0;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.axiom-tag {
+  color: var(--teal);
+  font-weight: 700;
+  margin-right: 0.6rem;
+}
+
+/* -------------------------------------------------------------------------
+   Transmission log (commands)
+   ------------------------------------------------------------------------- */
+
+.transmission-log {
+  list-style: none;
+  margin: 0 0 1.6rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.transmission-log li {
+  display: grid;
+  grid-template-columns: 46px 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+.tx-id {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: #06201f;
+  background: var(--teal);
+  padding: 0.35rem 0;
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.tx-label {
+  margin: 0 0 0.5rem;
+  color: var(--text-dim);
+  font-size: 0.94rem;
+}
+
+.tutorial-footnote {
+  margin: 1.5rem 0 0;
+  font-size: 0.9rem;
+  color: var(--text-faint);
+}
+
+/* -------------------------------------------------------------------------
+   Platform cards (install)
+   ------------------------------------------------------------------------- */
+
+.platform-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.1rem;
+  margin: 0 0 1.7rem;
+}
+
+.platform-card {
+  background: var(--hull);
+  border: 1px solid rgba(202, 160, 63, 0.14);
+  border-radius: var(--radius-md);
+  padding: 1.3rem 1.35rem;
+}
+
+.platform-code {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.6rem;
+}
+
+.platform-card p {
+  margin: 0 0 0.9rem;
+  color: var(--text-dim);
+  font-size: 0.94rem;
+}
+
+.platform-card pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.83rem;
+}
+
+/* -------------------------------------------------------------------------
+   Footer
+   ------------------------------------------------------------------------- */
+
+.site-footer {
+  max-width: var(--content-w);
+  margin: 0 auto;
+  padding: 1.8rem 1.4rem 2.4rem;
+  color: var(--text-faint);
+  font-size: 0.85rem;
+}
+
+.site-footer p {
+  margin: 0 0 0.3rem;
+}
+
+.site-footer a {
+  color: var(--text-dim);
+}
+
+.site-footer-sub {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+/* -------------------------------------------------------------------------
+   Responsive
+   ------------------------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .hero,
+  .two-col {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-porthole {
+    order: -1;
+  }
+
+  .porthole-frame {
+    width: min(320px, 80%);
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .nav-toggle {
+    display: inline-flex;
+  }
+
+  .topnav {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.9rem;
+    background: var(--navy-panel);
+    border-bottom: 2px solid rgba(202, 160, 63, 0.25);
+    padding: 1rem 1.4rem 1.3rem;
+    max-height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    opacity: 0;
+    transition: max-height 0.25s ease, opacity 0.2s ease, visibility 0.25s;
+  }
+
+  .topbar.nav-open .topnav {
+    max-height: 70vh;
+    overflow-y: auto;
+    visibility: visible;
+    opacity: 1;
+  }
+
+  .topnav-repo {
+    align-self: flex-start;
+  }
+}
+
+@media (max-width: 560px) {
+  :root {
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --gap: 1rem;
+  }
+
+  main {
+    padding: 0 1rem 2.2rem;
+  }
+
+  .hero {
+    padding: 2.2rem 0 1.8rem;
+  }
+
+  .hero h1 {
+    font-size: clamp(1.9rem, 8vw, 2.3rem);
+  }
+
+  .lede {
+    font-size: 1rem;
+  }
+
+  .cta-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn {
+    text-align: center;
+  }
+
+  .panel-head {
+    padding: 0.95rem 1.2rem;
+  }
+
+  .panel-body {
+    padding: 1.3rem 1.2rem 1.7rem;
+  }
+
+  .transmission-log li {
+    grid-template-columns: 1fr;
+  }
+
+  .tx-id {
+    width: fit-content;
+    padding: 0.25rem 0.6rem;
+  }
+}

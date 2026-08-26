@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hublot · A Shared Porthole for AI Agents</title>
+<meta name="description" content="Hublot: one real, visible Chromium window shared by any number of AI agents, each through its own tab, with a plain CLI and no MCP session to pre-configure." />
+<link rel="icon" type="image/svg+xml" href="assets/porthole.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<a class="skip-link" href="#contenu">Skip to main content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#hero">
+      <img src="assets/porthole.svg" alt="" class="brand-mark" aria-hidden="true" />
+      <span class="brand-name">Hublot</span>
+    </a>
+    <button
+      id="nav-toggle"
+      class="nav-toggle"
+      type="button"
+      aria-expanded="false"
+      aria-controls="topnav"
+      aria-label="Open navigation"
+    >
+      <span class="nav-toggle-bars" aria-hidden="true"><i></i><i></i><i></i></span>
+    </button>
+    <nav class="topnav" id="topnav" aria-label="Main navigation">
+      <a href="#probleme">The problem</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#commandes">Commands</a>
+      <a href="#installation">Install</a>
+      <a class="topnav-repo" href="https://github.com/bzhzion/hublot" target="_blank" rel="noopener">
+        GitHub<span aria-hidden="true"> ↗</span>
+      </a>
+    </nav>
+  </div>
+</header>
+
+<main id="contenu">
+
+  <!-- ───────────────────────── HERO ───────────────────────── -->
+  <section id="hero" class="hero" aria-labelledby="hero-title">
+    <div class="hero-copy">
+      <p class="eyebrow">One window, several watchers</p>
+      <h1 id="hero-title">
+        One porthole.<br />
+        <span class="accent-brass">Every eye</span> gets its own tab.
+      </h1>
+      <p class="lede">
+        Hublot opens a single, real, visible Chromium window that any number of AI agents
+        can look through at once, each through a tab scoped to a label of its own. The glass
+        stays clear for a human too: click, type a password, take over, at any moment,
+        on any tab.
+      </p>
+      <div class="cta-row">
+        <a class="btn btn--primary" href="#commandes">See the commands</a>
+        <a class="btn btn--ghost" href="https://github.com/bzhzion/hublot" target="_blank" rel="noopener">
+          View source code
+        </a>
+      </div>
+    </div>
+
+    <div class="hero-porthole" role="img" aria-label="Illustration of a porthole showing a simulated browser tab, with two more tabs waiting behind it">
+      <div class="porthole-frame">
+        <div class="porthole-rivets" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <div class="porthole-glass">
+          <div class="porthole-glint" aria-hidden="true"></div>
+          <div class="porthole-tabs" aria-hidden="true">
+            <span class="porthole-tab porthole-tab--active">claude-main</span>
+            <span class="porthole-tab">agent-debug</span>
+            <span class="porthole-tab">painteau</span>
+          </div>
+          <div class="porthole-readout" id="porthole-typer" aria-hidden="true"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── PROBLEM ───────────────────────── -->
+  <section id="probleme" class="panel" aria-labelledby="probleme-title">
+    <div class="panel-head">
+      <span class="panel-mark" aria-hidden="true">◍</span>
+      <h2 id="probleme-title">A porthole built for one pair of eyes</h2>
+    </div>
+    <div class="panel-body two-col">
+      <div>
+        <p>
+          Playwright MCP works well for a single agent, but two structural limits keep it
+          from serving several agents at once:
+        </p>
+        <ol class="plate-list">
+          <li>
+            <strong>One agent owns the browser session.</strong> No other agent can open a
+            tab or act in parallel without stepping on the first one's tab.
+          </li>
+          <li>
+            <strong>An MCP server has to be declared before the agent's session even
+            starts.</strong> There is no way to add one on the fly once an agent discovers,
+            mid-task, that it needs a browser.
+          </li>
+        </ol>
+        <p>
+          Hublot works around both: it is an ordinary CLI, exactly like <code>git</code> or
+          <code>curl</code>, callable at any moment from any agent's regular shell tool,
+          with nothing to configure beforehand.
+        </p>
+      </div>
+      <div class="readout readout--error">
+        <p class="readout-line"><span class="readout-prompt">&gt;</span> playwright_mcp.navigate("https://example.com")</p>
+        <p class="readout-line readout-line--fault">Error: browser context already claimed by another session.</p>
+        <p class="readout-line readout-line--fault">SESSION LOCKED · ONE AGENT AT A TIME</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── ARCHITECTURE ───────────────────────── -->
+  <section id="architecture" class="panel" aria-labelledby="architecture-title">
+    <div class="panel-head">
+      <span class="panel-mark" aria-hidden="true">◍</span>
+      <h2 id="architecture-title">Three brass fittings hold it together</h2>
+    </div>
+    <div class="panel-body">
+      <p class="lede-small">
+        Hublot is one small broker process, spawned once and left running in the
+        background, that owns the browser and answers a plain TCP socket on
+        <code>127.0.0.1</code>. Everything else follows from three deliberate choices.
+      </p>
+
+      <div class="porthole-grid">
+        <article class="porthole-card">
+          <span class="porthole-icon" aria-hidden="true">◍</span>
+          <h3>A real, visible window</h3>
+          <p>
+            <code>headless: false</code> is not an option, it is the point. The Chromium
+            window sits on screen at all times, with a profile that persists on disk:
+            cookies, autofill, and the browser's own saved passwords, exactly like a normal
+            browsing profile, nothing reinvented.
+          </p>
+        </article>
+
+        <article class="porthole-card">
+          <span class="porthole-icon" aria-hidden="true">◍</span>
+          <h3>One tab, one label</h3>
+          <p>
+            Each agent opens its own tab under a <code>--label</code> of its choosing
+            (<code>claude-main</code>, <code>agent-debug</code>...). Every command that
+            follows is scoped to that label: two agents can never act on the same tab by
+            accident, and a human can always tell which tab belongs to whom.
+          </p>
+        </article>
+
+        <article class="porthole-card">
+          <span class="porthole-icon" aria-hidden="true">◍</span>
+          <h3>A plain CLI, no MCP to pre-wire</h3>
+          <p>
+            No server to declare ahead of time, no session to negotiate. An agent runs
+            <code>hublot open</code> the moment it discovers it needs a browser, the same
+            way it would reach for <code>git</code> or <code>curl</code>.
+          </p>
+        </article>
+      </div>
+
+      <p class="axiom">
+        <span class="axiom-tag">RULE OF THE GLASS</span>
+        Every command fails cleanly (a clear message, exit code 1) if the broker isn't
+        listening, rather than doing nothing silently.
+      </p>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── COMMANDS ───────────────────────── -->
+  <section id="commandes" class="panel" aria-labelledby="commandes-title">
+    <div class="panel-head">
+      <span class="panel-mark" aria-hidden="true">◍</span>
+      <h2 id="commandes-title">The commands</h2>
+    </div>
+    <div class="panel-body">
+      <p class="lede-small">
+        Start the broker once, then open one tab per agent and drive it: navigate, click,
+        type, read, capture.
+      </p>
+
+      <ol class="transmission-log">
+        <li>
+          <span class="tx-id">01</span>
+          <div class="tx-body">
+            <p class="tx-label">Start the broker (idempotent: does nothing if it's already running)</p>
+            <pre><code>hublot start</code></pre>
+          </div>
+        </li>
+        <li>
+          <span class="tx-id">02</span>
+          <div class="tx-body">
+            <p class="tx-label">Check its state and the open tabs (alias: <code>hublot list</code>)</p>
+            <pre><code>hublot status</code></pre>
+          </div>
+        </li>
+        <li>
+          <span class="tx-id">03</span>
+          <div class="tx-body">
+            <p class="tx-label">Open a tab for this label (reuses it if it already exists)</p>
+            <pre><code>hublot open --label claude-main --url "https://example.com"</code></pre>
+          </div>
+        </li>
+        <li>
+          <span class="tx-id">04</span>
+          <div class="tx-body">
+            <p class="tx-label">Navigate inside that tab</p>
+            <pre><code>hublot navigate --label claude-main --url "https://example.com/page2"</code></pre>
+          </div>
+        </li>
+        <li>
+          <span class="tx-id">05</span>
+          <div class="tx-body">
+            <p class="tx-label">Click an element (Playwright CSS selector)</p>
+            <pre><code>hublot click --label claude-main --selector "button.submit"</code></pre>
+          </div>
+        </li>
+        <li>
+          <span class="tx-id">06</span>
+          <div class="tx-body">
+            <p class="tx-label">Type into a field</p>
+            <pre><code>hublot type --label claude-main --selector "input[name=q]" --text "search"</code></pre>
+          </div>
+        </li>
+        <li>
+          <span class="tx-id">07</span>
+          <div class="tx-body">
+            <p class="tx-label">Extract text (innerText) from an element, or the whole page if <code>--selector</code> is omitted</p>
+            <pre><code>hublot extract --label claude-main --selector ".result"</code></pre>
+          </div>
+        </li>
+        <li>
+          <span class="tx-id">08</span>
+          <div class="tx-body">
+            <p class="tx-label">Take a screenshot: a timestamped PNG is written to disk, its path printed to stdout</p>
+            <pre><code>hublot screenshot --label claude-main</code></pre>
+          </div>
+        </li>
+        <li>
+          <span class="tx-id">09</span>
+          <div class="tx-body">
+            <p class="tx-label">Read the JS console log captured since the tab was opened (capped at 500 entries)</p>
+            <pre><code>hublot console --label claude-main</code></pre>
+          </div>
+        </li>
+        <li>
+          <span class="tx-id">10</span>
+          <div class="tx-body">
+            <p class="tx-label">Close this tab (the browser itself stays open)</p>
+            <pre><code>hublot close --label claude-main</code></pre>
+          </div>
+        </li>
+        <li>
+          <span class="tx-id">11</span>
+          <div class="tx-body">
+            <p class="tx-label">Stop the broker entirely and close the browser</p>
+            <pre><code>hublot stop</code></pre>
+          </div>
+        </li>
+      </ol>
+
+      <p class="axiom">
+        <span class="axiom-tag">MULTI-AGENT CONVENTION</span>
+        Each agent should keep a stable <code>--label</code> that names itself, not just the
+        task at hand, and reuse it for its whole session instead of opening a new tab for
+        every command. That is what keeps several agents from ever stepping on each other,
+        even on the same machine.
+      </p>
+
+      <p class="tutorial-footnote">
+        Full command reference and every flag live in the
+        <a href="https://github.com/bzhzion/hublot#commandes" target="_blank" rel="noopener">repo README</a>.
+      </p>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── INSTALL ───────────────────────── -->
+  <section id="installation" class="panel panel--cta" aria-labelledby="installation-title">
+    <div class="panel-head">
+      <span class="panel-mark" aria-hidden="true">◍</span>
+      <h2 id="installation-title">Fitting the porthole</h2>
+    </div>
+    <div class="panel-body">
+      <p class="lede-small">
+        A packaged installer (winget) is planned but not published yet. For now, Hublot is
+        built from source, on Windows.
+      </p>
+
+      <div class="platform-grid">
+        <article class="platform-card">
+          <span class="platform-code accent-teal">BUILD FROM SOURCE</span>
+          <p>Clone the repository, then install and compile.</p>
+          <pre><code>npm install
+npm run build</code></pre>
+        </article>
+
+        <article class="platform-card">
+          <span class="platform-code accent-brass">BROWSER ENGINE</span>
+          <p>
+            Hublot reuses whatever Chromium-based browser is already installed, in order:
+            Google Chrome, then Microsoft Edge. If neither is present, or to keep Hublot
+            isolated from your everyday browser:
+          </p>
+          <pre><code>npx playwright install chromium</code></pre>
+        </article>
+
+        <article class="platform-card">
+          <span class="platform-code accent-faint">WINGET PACKAGE</span>
+          <p>
+            Coming soon, following the same signed-release pattern already in place for
+            sibling tools. Until then, building from source above is the supported path.
+          </p>
+          <pre><code>winget install Breizhzion.Hublot
+# not published yet</code></pre>
+        </article>
+      </div>
+
+      <div class="cta-row">
+        <a class="btn btn--primary btn--large" href="https://github.com/bzhzion/hublot" target="_blank" rel="noopener">
+          Get the source
+        </a>
+        <a class="btn btn--ghost" href="https://github.com/bzhzion/hublot#installation" target="_blank" rel="noopener">
+          Full install notes
+        </a>
+      </div>
+
+      <p class="tutorial-footnote">
+        Known limits of this early version: Windows only for now; <code>hublot type</code>
+        replaces a field's value outright rather than simulating real keystrokes, which
+        covers almost every form but won't trigger handlers that specifically listen for
+        <code>keydown</code>; the Playwright-downloaded Chromium fallback has not yet been
+        exercised on a machine without Chrome or Edge already installed.
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <p>
+    Hublot · <a href="https://github.com/bzhzion/hublot/blob/main/LICENSE.md" target="_blank" rel="noopener">BZ&#8209;1.1 License</a>
+    (BREIZHZION Personal Use License). Personal use only.
+  </p>
+  <p class="site-footer-sub">A <a href="https://breizhzion.com" target="_blank" rel="noopener">BREIZHZION</a> project.</p>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
