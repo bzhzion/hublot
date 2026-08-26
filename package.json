@@ -10,7 +10,8 @@
   "scripts": {
     "build": "tsc -p .",
     "dev": "tsc -p . --watch",
-    "package": "npm run build && node scripts/package-sea.mjs"
+    "package": "npm run build && node scripts/package-sea.mjs",
+    "icons": "node scripts/render-icons.mjs"
   },
   "dependencies": {
     "commander": "^12.1.0",
@@ -20,6 +21,7 @@
     "@types/node": "^20.14.0",
     "esbuild": "^0.28.2",
     "postject": "^1.0.0-alpha.6",
+    "sharp": "^0.35.4",
     "typescript": "^5.5.0"
   },
   "engines": {

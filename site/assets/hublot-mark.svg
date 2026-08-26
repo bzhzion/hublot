@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="Hublot">
+  <!-- Flat single-color glyph mark: brass ring (8 rivets) around an open window,
+       with a wave filling the lower half. Fill inherits currentColor so it drops
+       into any background (favicon, README badge, GitHub avatar, app icon) without
+       edits. Master coordinates are at 1024 so exports at that size stay crisp. -->
+  <path fill-rule="evenodd" clip-rule="evenodd" fill="currentColor" d="
+    M512,30.72 a481.28,481.28 0 1,0 0.51,0 Z
+    M512,133.12 a378.88,378.88 0 1,0 0.51,0 Z
+    M512,56.32 a25.6,25.6 0 1,0 0.51,0 Z
+    M816.26,182.14 a25.6,25.6 0 1,0 0.51,0 Z
+    M942.08,486.4 a25.6,25.6 0 1,0 0.51,0 Z
+    M816.26,790.66 a25.6,25.6 0 1,0 0.51,0 Z
+    M512,916.48 a25.6,25.6 0 1,0 0.51,0 Z
+    M207.74,790.66 a25.6,25.6 0 1,0 0.51,0 Z
+    M81.92,486.4 a25.6,25.6 0 1,0 0.51,0 Z
+    M207.74,182.14 a25.6,25.6 0 1,0 0.51,0 Z
+  "/>
+  <clipPath id="hublot-wave-inset">
+    <circle cx="512" cy="512" r="317.44" />
+  </clipPath>
+  <path clip-path="url(#hublot-wave-inset)" fill="currentColor"
+        d="M194.56,512 C296.96,466.12 378.88,466.12 512,512 C645.12,558.08 727.04,558.08 829.44,512 L829.44,1024 L194.56,1024 Z" />
+</svg>
