@@ -14,6 +14,7 @@ function localAppData(): string {
 export const HUBLOT_HOME = path.join(localAppData(), 'hublot');
 export const PROFILE_DIR = path.join(HUBLOT_HOME, 'profile');
 export const TABS_FILE = path.join(HUBLOT_HOME, 'tabs.json');
+export const TOKEN_FILE = path.join(HUBLOT_HOME, 'token');
 export const BROKER_LOG_FILE = path.join(HUBLOT_HOME, 'broker.log');
 
 export function screenshotsDir(): string {

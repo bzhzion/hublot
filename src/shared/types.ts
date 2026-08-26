@@ -12,7 +12,7 @@ export interface TabInfo {
   url: string;
 }
 
-export type BrokerRequest =
+export type BrokerCommand =
   | { cmd: 'ping' }
   | { cmd: 'status' }
   | { cmd: 'open'; label: string; url?: string }
@@ -24,6 +24,11 @@ export type BrokerRequest =
   | { cmd: 'console'; label: string }
   | { cmd: 'close'; label: string }
   | { cmd: 'stop' };
+
+// Le jeton d'auth (voir broker/auth.ts) est ajoute par le client au moment de
+// l'envoi, pas par chaque appelant : BrokerCommand reste le type que le CLI
+// manipule, BrokerRequest est ce qui transite reellement sur le socket.
+export type BrokerRequest = BrokerCommand & { token: string };
 
 export type BrokerResponse =
   | { ok: true; tabs?: TabInfo[]; text?: string; path?: string; logs?: ConsoleLogEntry[]; message?: string }

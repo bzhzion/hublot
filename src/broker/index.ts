@@ -9,10 +9,18 @@ import * as fs from 'fs';
 import * as net from 'net';
 import * as path from 'path';
 import { chromium, BrowserContext, Page, ConsoleMessage } from 'playwright-core';
-import { BROKER_HOST, BROKER_PORT, PROFILE_DIR, TABS_FILE, screenshotsDir, HUBLOT_HOME } from '../shared/paths';
+import { BROKER_HOST, BROKER_PORT, PROFILE_DIR, TABS_FILE, TOKEN_FILE, screenshotsDir, HUBLOT_HOME } from '../shared/paths';
 import { BrokerRequest, BrokerResponse, ConsoleLogEntry, TabInfo } from '../shared/types';
+import { ensureAuthToken, isAuthorized } from './auth';
+import { isValidLabel } from '../shared/validate';
 
 const MAX_CONSOLE_ENTRIES = 500;
+// Une requete legitime (label/selector/texte/URL) ne depasse jamais quelques
+// Ko ; ce plafond n'existe que pour qu'un client (bugue ou non authentifie)
+// qui n'envoie jamais de saut de ligne ne fasse pas grossir le buffer du
+// process sans limite (DoS memoire trivial sinon).
+const MAX_LINE_BYTES = 1_048_576;
+let authToken = '';
 
 interface TabEntry {
   label: string;
@@ -142,6 +150,9 @@ function requireTab(label: string): TabEntry {
 }
 
 async function handle(req: BrokerRequest): Promise<BrokerResponse> {
+  if ('label' in req && !isValidLabel(req.label)) {
+    return { ok: false, error: 'label invalide : lettres/chiffres/tirets/underscores uniquement, 64 caracteres max, doit commencer par un caractere alphanumerique' };
+  }
   switch (req.cmd) {
     case 'ping':
       return { ok: true, message: 'pong' };
@@ -231,6 +242,10 @@ function startServer(): net.Server {
     socket.on('error', () => undefined);
     socket.on('data', (chunk) => {
       buffer += chunk.toString('utf-8');
+      if (buffer.length > MAX_LINE_BYTES) {
+        socket.destroy();
+        return;
+      }
       let idx: number;
       // Protocole ligne par ligne : une requête JSON par ligne, une réponse JSON par ligne.
       while ((idx = buffer.indexOf('\n')) >= 0) {
@@ -241,7 +256,15 @@ function startServer(): net.Server {
           let response: BrokerResponse;
           try {
             const req: BrokerRequest = JSON.parse(line);
-            response = await handle(req);
+            // Le port TCP loopback est joignable par tout compte Windows sur
+            // cette machine, pas seulement celui qui a lance le broker : le
+            // jeton est ce qui restreint reellement l'acces au meme
+            // utilisateur (voir broker/auth.ts).
+            if (!isAuthorized(req.token, authToken)) {
+              response = { ok: false, error: 'unauthorized' };
+            } else {
+              response = await handle(req);
+            }
           } catch (err) {
             response = { ok: false, error: (err as Error).message };
           }
@@ -284,6 +307,7 @@ async function shutdown(code: number): Promise<void> {
 // commande cachée "__broker" dans cli/index.ts.
 export async function runBroker(): Promise<void> {
   ensureDir(HUBLOT_HOME);
+  authToken = ensureAuthToken(TOKEN_FILE);
   const server = startServer();
   context = await launchContext();
 

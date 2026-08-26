@@ -1,12 +1,22 @@
 import * as net from 'net';
-import { BROKER_HOST, BROKER_PORT } from '../shared/paths';
-import { BrokerRequest, BrokerResponse } from '../shared/types';
+import { BROKER_HOST, BROKER_PORT, TOKEN_FILE } from '../shared/paths';
+import { BrokerCommand, BrokerResponse } from '../shared/types';
+import { readAuthToken } from '../broker/auth';
 
 const CONNECT_TIMEOUT_MS = 2000;
 const RESPONSE_TIMEOUT_MS = 30000;
+// Meme plafond que le broker (defense en profondeur si jamais une reponse
+// venait a grossir sans jamais envoyer son saut de ligne final).
+const MAX_LINE_BYTES = 1_048_576;
 
-export function sendRequest(req: BrokerRequest): Promise<BrokerResponse> {
+export function sendRequest(cmd: BrokerCommand): Promise<BrokerResponse> {
   return new Promise((resolve, reject) => {
+    const token = readAuthToken(TOKEN_FILE);
+    if (!token) {
+      reject(new Error('jeton d\'authentification introuvable, lancer "hublot start" d\'abord'));
+      return;
+    }
+    const req = { ...cmd, token };
     const socket = net.createConnection({ host: BROKER_HOST, port: BROKER_PORT });
     let buffer = '';
     let settled = false;
@@ -29,6 +39,10 @@ export function sendRequest(req: BrokerRequest): Promise<BrokerResponse> {
 
     socket.on('data', (chunk) => {
       buffer += chunk.toString('utf-8');
+      if (buffer.length > MAX_LINE_BYTES) {
+        fail(new Error('réponse du broker anormalement volumineuse'));
+        return;
+      }
       const idx = buffer.indexOf('\n');
       if (idx >= 0 && !settled) {
         settled = true;

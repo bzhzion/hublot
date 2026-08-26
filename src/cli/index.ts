@@ -10,6 +10,17 @@ import { Command } from 'commander';
 import { isBrokerRunning, sendRequest } from './client';
 import { BrokerResponse } from '../shared/types';
 import { HUBLOT_HOME, BROKER_LOG_FILE } from '../shared/paths';
+import { isValidLabel } from '../shared/validate';
+
+// Meme regle que le broker (defense en profondeur) : echouer tot avec un
+// message clair plutot que de laisser le broker renvoyer une erreur generique
+// apres un aller-retour reseau.
+function requireValidLabel(label: string): void {
+  if (!isValidLabel(label)) {
+    console.error('Label invalide : lettres/chiffres/tirets/underscores uniquement, 64 caractères max, doit commencer par un caractère alphanumérique.');
+    process.exit(1);
+  }
+}
 
 // Détection best-effort du mode "exécutable unique" (Node SEA). Le module
 // `node:sea` n'existe que sur les runtimes récents (Node 20.12+/21.7+) : sur
@@ -135,6 +146,7 @@ program
   .option('--url <url>', 'URL à charger à l\'ouverture')
   .description('Ouvre un nouvel onglet pour ce label, ou réutilise l\'existant')
   .action(async (opts) => {
+    requireValidLabel(opts.label);
     const res = await callBroker({ cmd: 'open', label: opts.label, url: opts.url });
     if (!res.ok) return printResultAndExit(res);
     console.log(res.message ?? 'ok');
@@ -147,6 +159,7 @@ program
   .requiredOption('--url <url>', 'URL à charger')
   .description('Navigue vers une URL dans l\'onglet du label')
   .action(async (opts) => {
+    requireValidLabel(opts.label);
     const res = await callBroker({ cmd: 'navigate', label: opts.label, url: opts.url });
     printResultAndExit(res);
   });
@@ -157,6 +170,7 @@ program
   .requiredOption('--selector <selector>', 'sélecteur CSS Playwright')
   .description('Clique sur un élément')
   .action(async (opts) => {
+    requireValidLabel(opts.label);
     const res = await callBroker({ cmd: 'click', label: opts.label, selector: opts.selector });
     printResultAndExit(res);
   });
@@ -168,6 +182,7 @@ program
   .requiredOption('--text <text>', 'texte à saisir')
   .description('Saisit du texte dans un champ')
   .action(async (opts) => {
+    requireValidLabel(opts.label);
     const res = await callBroker({ cmd: 'type', label: opts.label, selector: opts.selector, text: opts.text });
     printResultAndExit(res);
   });
@@ -178,6 +193,7 @@ program
   .option('--selector <selector>', 'sélecteur CSS Playwright (sinon tout le body)')
   .description('Extrait le texte (innerText) d\'un élément ou de la page')
   .action(async (opts) => {
+    requireValidLabel(opts.label);
     const res = await callBroker({ cmd: 'extract', label: opts.label, selector: opts.selector });
     if (!res.ok) return printResultAndExit(res);
     console.log(res.text ?? '');
@@ -188,6 +204,7 @@ program
   .requiredOption('--label <label>', 'label de l\'onglet')
   .description('Prend une capture d\'écran et écrit le chemin du PNG en stdout')
   .action(async (opts) => {
+    requireValidLabel(opts.label);
     const res = await callBroker({ cmd: 'screenshot', label: opts.label });
     if (!res.ok) return printResultAndExit(res);
     console.log(res.path ?? '');
@@ -198,6 +215,7 @@ program
   .requiredOption('--label <label>', 'label de l\'onglet')
   .description('Affiche les derniers logs console JS capturés pour cet onglet')
   .action(async (opts) => {
+    requireValidLabel(opts.label);
     const res = await callBroker({ cmd: 'console', label: opts.label });
     if (!res.ok) return printResultAndExit(res);
     for (const log of res.logs ?? []) {
@@ -210,6 +228,7 @@ program
   .requiredOption('--label <label>', 'label de l\'onglet à fermer')
   .description('Ferme l\'onglet de ce label')
   .action(async (opts) => {
+    requireValidLabel(opts.label);
     const res = await callBroker({ cmd: 'close', label: opts.label });
     printResultAndExit(res);
   });
