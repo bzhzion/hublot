@@ -8,7 +8,7 @@
 import * as fs from 'fs';
 import * as net from 'net';
 import * as path from 'path';
-import { chromium, BrowserContext, Page, ConsoleMessage } from 'playwright-core';
+import { chromium, BrowserContext, Page, ConsoleMessage } from './playwrightCore';
 import { BROKER_HOST, BROKER_PORT, PROFILE_DIR, TABS_FILE, TOKEN_FILE, screenshotsDir, HUBLOT_HOME } from '../shared/paths';
 import { BrokerRequest, BrokerResponse, ConsoleLogEntry, TabInfo } from '../shared/types';
 import { ensureAuthToken, isAuthorized } from './auth';

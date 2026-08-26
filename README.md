@@ -143,15 +143,20 @@ travail plutôt que d'ouvrir un nouvel onglet à chaque commande. Objectif :
 plusieurs agents en parallèle ne se marchent jamais dessus, même sur la
 même machine.
 
-## Distribution (exécutable unique)
+## Distribution (exécutable + un dossier à côté)
 
-Hublot se distribue comme son outil sœur `beammeup` : un seul exécutable
-téléchargeable (`hublot.exe` sous Windows, `hublot` sous Linux), sans
-installation Node.js préalable sur la machine cible. Contrairement à
-BeamMeUp (Rust/Tauri), Hublot est du Node.js et utilise donc le mode natif
-Node.js **Single Executable Applications (SEA)**, disponible depuis Node 20
-(marqué expérimental sur certaines versions ; testé ici avec succès sur
-Node 25).
+Hublot se distribue sur le même principe que son outil sœur `beammeup` :
+rien à installer sur la machine cible, pas de `npm install`. La forme
+diffère légèrement : `build/hublot.exe` (Windows) ou `build/hublot` (Linux)
+**plus un dossier `build/node_modules/` à côté** (voir "Limite du bundling"
+ci-dessous pour pourquoi). Les deux doivent être distribués ensemble (même
+dossier, même zip de release) — l'exécutable seul, sans ce dossier, échoue
+au démarrage du broker.
+
+Contrairement à BeamMeUp (Rust/Tauri), Hublot est du Node.js et utilise
+donc le mode natif Node.js **Single Executable Applications (SEA)**,
+disponible depuis Node 20 (marqué expérimental sur certaines versions ;
+testé ici avec succès sur Node 25).
 
 ### Build local
 
@@ -164,8 +169,8 @@ npm run package
 
 1. `npm run build` (compilation TypeScript classique, inchangée).
 2. `node scripts/package-sea.mjs`, qui :
-   - bundle `dist/cli/index.js` (+ tout ce qu'il importe, y compris le
-     broker et ses dépendances `node_modules`) en un seul fichier
+   - bundle `dist/cli/index.js` (+ tout ce qu'il importe, **sauf
+     `playwright-core`**, voir "Limite du bundling") en un seul fichier
      CommonJS via **esbuild** (`build/sea-bundle.cjs`) : SEA exige un point
      d'entrée autonome, sans résolution de `node_modules` au runtime ;
    - génère la config et le blob SEA via
@@ -174,11 +179,15 @@ npm run package
    - copie le binaire `node` courant pour servir de socle
      (`build/hublot.exe` / `build/hublot`) ;
    - injecte le blob dans cette copie via **postject** (API
-     programmatique, pas la CLI).
+     programmatique, pas la CLI) ;
+   - copie `node_modules/playwright-core` (aucune dépendance propre) dans
+     `build/node_modules/playwright-core`.
 
-Résultat testé localement : `build/hublot.exe status` répond
-`Broker Hublot: arrêté.` sans avoir Node.js installé sur la machine (le
-binaire l'embarque). Aucune dépendance à `npm install` sur la machine cible.
+Résultat testé en conditions réelles (session BeamMeUp visible, pas juste
+en tâche de fond) : `build/hublot.exe start` lance un vrai Chromium visible,
+`open`/`screenshot` fonctionnent sur une page réelle, sans Node.js ni
+`npm install` sur la machine (l'exécutable embarque Node lui-même, le
+dossier `node_modules/playwright-core` fournit le reste).
 
 ### Piège résolu : `hublot start` en mode empaqueté
 
@@ -194,15 +203,30 @@ le nouveau process. La distribution npm-install classique (`node
 dist/cli/index.js`) n'est pas affectée : elle continue de spawner
 `dist/broker/index.js` comme avant.
 
-### Limite connue du bundling
+### Limite du bundling : `playwright-core` ne peut pas être fondu dans le blob
 
-`playwright-core` référence conditionnellement le protocole BiDi
-(`chromium-bidi`), jamais exercé par le chemin CDP qu'Hublot utilise
-(`channel: 'chrome'`/`'msedge'`). Le paquet `chromium-bidi` n'étant pas
-installé, il est marqué `external` dans la config esbuild
-(`scripts/package-sea.mjs`) : le `require()` correspondant reste inerte
-dans le bundle et ne peut échouer qu'au runtime, seulement si ce chemin
-BiDi était un jour exercé (pas le cas aujourd'hui).
+Plusieurs fichiers internes de `playwright-core` relisent leur propre
+`package.json` via `require(path.join(__dirname, '..', 'package.json'))`.
+Ça marche tel quel en distribution npm-install classique (`__dirname`
+pointe vraiment vers `node_modules/playwright-core/lib`), mais une fois ces
+fichiers fondus par esbuild dans un seul bundle, `__dirname` devient celui
+du bundle final (`build/`), donc ce `require()` cherche `package.json` à
+côté de l'exécutable au lieu du vrai fichier du paquet →
+`ERR_UNKNOWN_BUILTIN_MODULE` au démarrage du broker en mode SEA. Constaté
+à deux endroits différents (`lib/package.js` **et** une deuxième copie du
+même motif à l'intérieur de `lib/coreBundle.js`, que Playwright embarque
+déjà pré-empaqueté) : pas un cas isolé patchable fichier par fichier.
+
+Solution retenue : `playwright-core` est marqué `external` dans esbuild
+(jamais bundlé) et copié tel quel dans `build/node_modules/playwright-core`
+(voir plus haut). Reste un piège : même un `require('playwright-core')`
+"bare" (non bundlé) échoue en mode SEA, parce que le chargeur restreint de
+SEA n'accepte que les modules déjà embarqués et les builtins Node — aucune
+résolution disque automatique, même pour un module externe légitime.
+`src/broker/playwrightCore.ts` contourne ça avec `createRequire(process.execPath)`
+en mode SEA (détecté via `node:sea` `isSea()`), qui déclenche la résolution
+CommonJS normale à partir du dossier de l'exécutable ; en distribution
+npm-install classique, un `require()` ordinaire suffit.
 
 ### CI de release
 

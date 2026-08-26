@@ -59,14 +59,18 @@ jobs:
       - name: Build + package (SEA)
         run: npm run package
 
-      - name: Renommer l'executable avec la version
+      - name: Empaqueter l'executable + node_modules/playwright-core en zip
         id: artifact
         shell: pwsh
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          $name = "hublot-$env:VERSION-x64-setup.exe"
-          Copy-Item build/hublot.exe "build/$name"
+          # playwright-core ne peut pas etre fondu dans le blob SEA (voir
+          # README, section Distribution) : il doit voyager a cote de
+          # hublot.exe, meme dossier. D'ou un zip plutot qu'un exe seul en
+          # asset de release.
+          $name = "hublot-$env:VERSION-x64.zip"
+          Compress-Archive -Path build/hublot.exe, build/node_modules -DestinationPath "build/$name"
           "name=$name" >> $env:GITHUB_OUTPUT
 
       # TODO (signature) : contrairement a beammeup (azure/artifact-signing-action,
