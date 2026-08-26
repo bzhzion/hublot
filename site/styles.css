@@ -24,7 +24,11 @@
 
   --text: #f3ecd8;
   --text-dim: #c3b89a;
-  --text-faint: #7c7259;
+  /* Lightened from an earlier #7c7259: that shade sat at ~3.6-3.9:1 against
+     the navy backgrounds it's used on (eyebrow, footer, footnotes), under
+     the 4.5:1 AA floor for normal text. This tone clears 4.5:1 against all
+     three navy shades (--navy, --navy-panel, --navy-deep). */
+  --text-faint: #8f8468;
 
   --font-display: "Fraunces", "Iowan Old Style", "Palatino Linotype", serif;
   --font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
