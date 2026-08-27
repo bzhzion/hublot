@@ -41,6 +41,13 @@ export type BrokerCommand =
   | { cmd: 'wait'; label: string; selector?: string; text?: string; timeoutMs?: number }
   | { cmd: 'find'; label: string; text: string }
   | { cmd: 'evaluate'; label: string; expression: string }
+  // DANGER volontaire : execute du code Playwright arbitraire dans le
+  // process du broker (Node complet : fs, child_process, reseau...), pas
+  // seulement dans le bac a sable JS de la page comme "evaluate". Choix
+  // assume pour un usage personnel sur une machine deja controlee par
+  // painteau, jamais destine a un environnement partage. Voir
+  // docs/hublot.md, registre d'audit, section "risque accepte".
+  | { cmd: 'run_unsafe'; label: string; code: string }
   | { cmd: 'resize'; label: string; width: number; height: number }
   | { cmd: 'extract'; label: string; selector?: string }
   | { cmd: 'snapshot'; label: string }

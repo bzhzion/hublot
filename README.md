@@ -181,14 +181,29 @@ Toutes ces commandes ont été testées en conditions réelles (pas juste compil
 locale : `select`/`hover`/`press`/`drag`/`upload`/`dialog`/`wait`/`find`/`evaluate`/`back`/
 `resize`/`network`/`snapshot` produisent bien l'effet attendu sur un vrai Chromium.
 
+### ⚠️ `run-code-unsafe` : accès Node complet, pas juste au DOM de la page
+
+```bash
+# Le code recoit (page, context) et tourne dans le process du broker lui-meme
+hublot run-code-unsafe --label claude-main --code "async (page) => { return await page.title(); }"
+hublot run-code-unsafe --label claude-main --file mon-script.js
+```
+
+À la différence d'`evaluate` (JS confiné au bac à sable de la page, aucun accès au système),
+`run-code-unsafe` exécute le code **dans le process Node du broker** : accès complet à l'API
+Playwright (`page`, `context`, `BrowserContext` entier) et, par transitivité, à tout ce que Node
+peut faire (`fs`, `child_process`, réseau arbitraire...). Testé en conditions réelles : `page.title()`
+(API Playwright) et un vrai `require('fs').existsSync(...)` fonctionnent tous les deux. C'est un
+choix assumé pour un usage personnel sur une machine déjà de confiance — quiconque détient le
+jeton d'auth peut exécuter du code arbitraire sous le compte Windows du broker. Voir
+`docs/hublot.md` (registre d'audit, section "risque accepté") dans le repo admin.
+
 ### Ce qui manque encore par rapport à Playwright MCP
 
-Volontairement pas repris : `browser_run_code_unsafe` (capacité déjà couverte par `evaluate`,
-un deuxième canal d'exécution de code ne ferait qu'ajouter de la surface sans nouvelle
-capacité) et le remplissage groupé multi-champs (`browser_fill_form` — `type`/`select` un par
-un couvrent le même besoin, juste sans le batching). `browser_tabs` n'a pas d'équivalent direct
-non plus : le modèle de Hublot (un onglet = un `--label` choisi par l'appelant) remplace déjà le
-besoin de lister/nommer les onglets dynamiquement.
+Volontairement pas repris : le remplissage groupé multi-champs (`browser_fill_form` — `type`/
+`select` un par un couvrent le même besoin, juste sans le batching). `browser_tabs` n'a pas
+d'équivalent direct non plus : le modèle de Hublot (un onglet = un `--label` choisi par
+l'appelant) remplace déjà le besoin de lister/nommer les onglets dynamiquement.
 
 ### Convention d'usage multi-agents
 

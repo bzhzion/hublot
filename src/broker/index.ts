@@ -306,6 +306,21 @@ async function handle(req: BrokerRequest): Promise<BrokerResponse> {
       return { ok: true, result: result === undefined ? 'undefined' : JSON.stringify(result) };
     }
 
+    // DANGER volontaire, voir shared/types.ts : contrairement a "evaluate"
+    // (JS dans le bac a sable de la page), ce code tourne dans le process
+    // Node du broker lui-meme, avec le meme acces que le reste du code
+    // (fs, child_process, l'objet BrowserContext complet...). Quiconque
+    // detient le jeton d'auth peut donc executer du code arbitraire sous le
+    // compte Windows du broker : c'est un choix assume pour un usage
+    // personnel sur une machine deja de confiance, pas un oubli.
+    case 'run_unsafe': {
+      const entry = requireTab(req.label);
+      // eslint-disable-next-line no-eval
+      const fn = eval(`(${req.code})`) as (page: Page, ctx: BrowserContext | null) => unknown;
+      const result = await fn(entry.page, context);
+      return { ok: true, result: result === undefined ? 'undefined' : JSON.stringify(result) };
+    }
+
     case 'resize': {
       const entry = requireTab(req.label);
       await entry.page.setViewportSize({ width: req.width, height: req.height });

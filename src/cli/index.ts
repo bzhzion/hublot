@@ -332,6 +332,28 @@ program
   });
 
 program
+  .command('run-code-unsafe')
+  .requiredOption('--label <label>', 'label de l\'onglet')
+  .option('--code <code>', 'fonction Playwright, ex: "async (page, context) => { return await page.title(); }"')
+  .option('--file <file>', 'charger le code depuis ce fichier plutôt que --code (utile pour du code multi-lignes)')
+  .description(
+    'DANGER (assumé) : exécute du code Playwright arbitraire dans le process du broker lui-même, ' +
+      'pas seulement dans le bac à sable JS de la page (accès Node complet : fs, child_process, ' +
+      'BrowserContext entier). Réservé à un usage personnel sur une machine déjà de confiance.',
+  )
+  .action(async (opts) => {
+    requireValidLabel(opts.label);
+    const code = opts.file ? fs.readFileSync(opts.file, 'utf-8') : opts.code;
+    if (!code) {
+      console.error('Fournir --code ou --file.');
+      process.exit(1);
+    }
+    const res = await callBroker({ cmd: 'run_unsafe', label: opts.label, code });
+    if (!res.ok) return printResultAndExit(res);
+    console.log(res.result ?? '');
+  });
+
+program
   .command('resize')
   .requiredOption('--label <label>', 'label de l\'onglet')
   .requiredOption('--width <width>', 'largeur en pixels')
