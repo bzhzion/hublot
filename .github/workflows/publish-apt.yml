@@ -1,15 +1,17 @@
 name: Publier sur le depot APT
 
-# Squelette calque sur bzhzion/beammeup/.github/workflows/publish-apt.yml.
-# NE FONCTIONNE PAS TEL QUEL : les secrets AXOLOTL_APT_KEY / AXOLOTL_HOST /
-# AXOLOTL_USER n'existent pas sur ce depot. beammeup utilise une cle SSH
-# DEDIEE, restreinte cote serveur par une commande forcee dans
-# authorized_keys sur axolotl (limitee a publier un paquet nomme "beammeup",
-# sans shell ni lecture de fichiers - voir docs/beammeup.md du repo admin).
-# Cette meme discipline devra etre reproduite pour Hublot avant d'activer ce
-# workflow : une cle a part, jamais reutiliser celle de beammeup, jamais une
-# cle d'acces general a axolotl. Declenchement manuel uniquement, jamais
-# automatique.
+# Volontairement decouple du build (release-linux.yml) : declenchement manuel uniquement, jamais
+# automatique. Meme raison que publish-winget.yml, avec un argument de securite en plus, ce
+# workflow etant le seul a toucher une machine de production (axolotl) depuis un depot public :
+# moins il se declenche tout seul, mieux c'est. Meme motif exact que bzhzion/beammeup.
+#
+# La cle SSH utilisee (`AXOLOTL_APT_KEY`) est **dediee et restreinte cote serveur** : une commande
+# forcee dans `authorized_keys` la limite a publier un paquet nomme `hublot`, sans shell ni
+# lecture de fichiers (~/bin/hublot-apt-publish.sh sur axolotl). C'est ce qui rend acceptable la
+# presence d'une cle vers une machine de production dans les secrets d'un depot public. Ne jamais
+# la remplacer par une cle d'acces general. Teste en conditions reelles le 2026-08-27 : une
+# commande arbitraire ("cat /etc/passwd") execute la commande forcee au lieu du shell, et le vrai
+# .deb v0.1.0 s'est publie avec succes (verifie via https://apt.breizhzion.com/dists/stable/main/binary-amd64/Packages).
 
 on:
   workflow_dispatch:
@@ -42,12 +44,12 @@ jobs:
           echo "Paquet: $DEB"
           echo "deb=$DEB" >> "$GITHUB_OUTPUT"
 
-      # TODO : cle SSH dediee et restreinte non configuree pour Hublot (voir
-      # le commentaire en tete de fichier). Cette etape echouera tant que
-      # les secrets ci-dessous ne sont pas crees.
+      # Une seule connexion, sans scp ni commande distante : la cle est associee a une commande
+      # forcee qui lit le paquet sur l'entree standard, verifie que c'est bien un .deb nomme
+      # `hublot`, puis le passe a reprepro. Rien d'autre n'est executable avec cette cle.
       - name: Publier via la cle restreinte
         env:
-          SSH_KEY: ${{ secrets.AXOLOTL_APT_KEY_HUBLOT }}
+          SSH_KEY: ${{ secrets.AXOLOTL_APT_KEY }}
           HOST: ${{ secrets.AXOLOTL_HOST }}
           USER_NAME: ${{ secrets.AXOLOTL_USER }}
           DEB: ${{ steps.deb.outputs.deb }}
