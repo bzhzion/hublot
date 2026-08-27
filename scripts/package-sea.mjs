@@ -41,13 +41,34 @@ import { rcedit } from 'rcedit';
 import { execFileSync } from 'node:child_process';
 import {
   cpSync,
+  existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+// Le node.exe officiel est signe par Microsoft. Copier ce binaire tel quel
+// puis le modifier (rcedit, postject) laisse une table de certificats PE
+// invalide - ni SignTool ni meme "signtool remove" ne peuvent alors la
+// nettoyer une fois rcedit/postject deja passes (constate en conditions
+// reelles en CI : SignTool Error 0x800700C1 "bad exe format", et en local
+// "CryptSIPRemoveSignedDataMsg ... parameter incorrect"). Il faut retirer
+// la signature Microsoft tout de suite apres la copie, avant toute autre
+// modification, verifie en local sur une copie fraiche de node.exe.
+function findSignTool() {
+  const root = 'C:\\Program Files (x86)\\Windows Kits\\10\\bin';
+  if (!existsSync(root)) return null;
+  const versions = readdirSync(root).filter((v) => /^10\.\d/.test(v)).sort().reverse();
+  for (const v of versions) {
+    const candidate = path.join(root, v, 'x64', 'signtool.exe');
+    if (existsSync(candidate)) return candidate;
+  }
+  return null;
+}
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const buildDir = path.join(root, 'build');
@@ -90,6 +111,16 @@ async function main() {
   console.log(`[package-sea] copie du binaire node -> ${exeName}`);
   rmSync(exePath, { force: true });
   cpSync(process.execPath, exePath);
+
+  if (process.platform === 'win32') {
+    const signtool = findSignTool();
+    if (signtool) {
+      console.log('[package-sea] retrait de la signature Microsoft d\'origine (signtool remove /s) ...');
+      execFileSync(signtool, ['remove', '/s', exePath], { stdio: 'inherit' });
+    } else {
+      console.log('[package-sea] signtool introuvable, signature Microsoft d\'origine laissee telle quelle (rcedit/postject risquent de la corrompre, sans consequence tant que le binaire n\'est pas ensuite resigne).');
+    }
+  }
 
   // Sans ca, l'executable affiche "Node.js" comme societe/produit/copyright
   // (proprietes du vrai node.exe copie ci-dessus) dans l'explorateur Windows
