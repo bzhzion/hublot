@@ -761,6 +761,12 @@ main {
   white-space: pre-wrap;
   word-break: break-word;
   font-size: 0.83rem;
+  margin-bottom: 1rem;
+}
+
+.platform-card .btn {
+  display: block;
+  text-align: center;
 }
 
 /* -------------------------------------------------------------------------
