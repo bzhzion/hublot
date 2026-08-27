@@ -96,20 +96,27 @@ async function main() {
   // et le gestionnaire des taches. rcedit reecrit les ressources PE
   // (VERSION_INFO + icone) avant l'injection du blob SEA, pas apres, pour
   // que la derniere ecriture sur le fichier reste celle de postject.
-  console.log('[package-sea] metadonnees Windows (rcedit) ...');
-  const pkg = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf-8'));
-  await rcedit(exePath, {
-    'version-string': {
-      CompanyName: 'BREIZHZION',
-      ProductName: 'Hublot',
-      FileDescription: 'Hublot - navigateur Chromium partage entre agents IA',
-      LegalCopyright: 'Copyright BREIZHZION',
-      OriginalFilename: exeName,
-    },
-    'file-version': pkg.version,
-    'product-version': pkg.version,
-    icon: path.join(root, 'site', 'assets', 'favicon.ico'),
-  });
+  // Uniquement sur Windows : rcedit edite des ressources PE (format qui
+  // n'existe pas sur un binaire ELF Linux), et sur un runner Linux le
+  // paquet npm rcedit tente de passer par Wine (absent) pour executer son
+  // binaire .exe interne, cassant tout le build - constate en conditions
+  // reelles sur release-linux.yml, pas une simple precaution theorique.
+  if (process.platform === 'win32') {
+    console.log('[package-sea] metadonnees Windows (rcedit) ...');
+    const pkg = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf-8'));
+    await rcedit(exePath, {
+      'version-string': {
+        CompanyName: 'BREIZHZION',
+        ProductName: 'Hublot',
+        FileDescription: 'Hublot - navigateur Chromium partage entre agents IA',
+        LegalCopyright: 'Copyright BREIZHZION',
+        OriginalFilename: exeName,
+      },
+      'file-version': pkg.version,
+      'product-version': pkg.version,
+      icon: path.join(root, 'site', 'assets', 'favicon.ico'),
+    });
+  }
 
   console.log('[package-sea] injection du blob (postject) ...');
   const blob = readFileSync(blobPath);
