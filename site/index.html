@@ -408,14 +408,15 @@
     </div>
     <div class="panel-body">
       <p class="lede-small">
-        Version 0.1.0 is out. Windows gets a proper installer (adds <code>hublot</code> to your
-        PATH); Linux gets a <code>.deb</code>. winget is planned but not published yet.
+        Version 0.1.0 is out, signed on both platforms (Azure Trusted Signing). Windows gets a
+        proper installer (adds <code>hublot</code> to your PATH); Linux gets an in-house apt
+        repository. winget is planned but not published yet.
       </p>
 
       <div class="platform-grid">
         <article class="platform-card">
           <span class="platform-code accent-teal">WINDOWS</span>
-          <p>Installer (Inno Setup): adds Hublot to your user PATH, ships with an uninstaller.</p>
+          <p>Installer (Inno Setup), signed: adds Hublot to your user PATH, ships with an uninstaller.</p>
           <pre><code>hublot-0.1.0-x64-setup.exe</code></pre>
           <a class="btn btn--primary" href="https://github.com/bzhzion/hublot/releases/download/v0.1.0/hublot-0.1.0-x64-setup.exe">
             Download for Windows
@@ -424,10 +425,13 @@
 
         <article class="platform-card">
           <span class="platform-code accent-brass">LINUX</span>
-          <p>Debian/Ubuntu package.</p>
-          <pre><code>sudo dpkg -i hublot_0.1.0_amd64.deb</code></pre>
+          <p>Debian/Ubuntu, via the in-house apt repository (same one used by BeamMeUp).</p>
+          <pre><code>sudo curl -fsSL https://apt.breizhzion.com/KEY.gpg -o /usr/share/keyrings/breizhzion.asc
+echo "deb [signed-by=/usr/share/keyrings/breizhzion.asc] https://apt.breizhzion.com stable main" \
+  | sudo tee /etc/apt/sources.list.d/breizhzion.list
+sudo apt update && sudo apt install hublot</code></pre>
           <a class="btn btn--ghost" href="https://github.com/bzhzion/hublot/releases/download/v0.1.0/hublot_0.1.0_amd64.deb">
-            Download the .deb
+            Or download the .deb directly
           </a>
         </article>
 
@@ -466,8 +470,7 @@
         outright rather than simulating real keystrokes, which covers almost every form but
         won't trigger handlers that specifically listen for <code>keydown</code>; the
         Playwright-downloaded Chromium fallback has not yet been exercised on a machine without
-        Chrome or Edge already installed; the installer is not yet code-signed, so Windows
-        SmartScreen may warn on first run.
+        Chrome or Edge already installed.
       </p>
     </div>
   </section>

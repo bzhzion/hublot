@@ -279,6 +279,17 @@ Les métadonnées Windows de l'exe (société, produit, description, copyright,
 icône) sont réécrites via **rcedit** dans `scripts/package-sea.mjs` — sans
 ça, l'exécutable affiche "Node.js" partout (Explorateur, gestionnaire des
 tâches) puisqu'il n'est au départ qu'une copie renommée du binaire `node`.
+`hublot.exe` et l'installateur sont signés (**Azure Trusted Signing**, même
+Service Principal partagé que `beammeup`/`justmakeQ`/`hae-app`).
+
+Sur Linux, même dépôt apt maison que `beammeup` (`apt.breizhzion.com`) :
+
+```bash
+sudo curl -fsSL https://apt.breizhzion.com/KEY.gpg -o /usr/share/keyrings/breizhzion.asc
+echo "deb [signed-by=/usr/share/keyrings/breizhzion.asc] https://apt.breizhzion.com stable main" \
+  | sudo tee /etc/apt/sources.list.d/breizhzion.list
+sudo apt update && sudo apt install hublot
+```
 
 ### Build local
 
