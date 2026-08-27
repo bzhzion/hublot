@@ -242,20 +242,43 @@ travail plutôt que d'ouvrir un nouvel onglet à chaque commande. Objectif :
 plusieurs agents en parallèle ne se marchent jamais dessus, même sur la
 même machine.
 
-## Distribution (exécutable + un dossier à côté)
+## Distribution
 
-Hublot se distribue sur le même principe que son outil sœur `beammeup` :
-rien à installer sur la machine cible, pas de `npm install`. La forme
-diffère légèrement : `build/hublot.exe` (Windows) ou `build/hublot` (Linux)
-**plus un dossier `build/node_modules/` à côté** (voir "Limite du bundling"
-ci-dessous pour pourquoi). Les deux doivent être distribués ensemble (même
-dossier, même zip de release) — l'exécutable seul, sans ce dossier, échoue
-au démarrage du broker.
+Contrairement à BeamMeUp (Rust/Tauri), Hublot est du Node.js et utilise le
+mode natif Node.js **Single Executable Applications (SEA)**, disponible
+depuis Node 20 (marqué expérimental sur certaines versions ; testé ici avec
+succès sur Node 25) pour produire `build/hublot.exe`. Ce dernier doit
+toujours être accompagné d'un dossier `build/node_modules/playwright-core`
+(voir "Limite du bundling" ci-dessous pour pourquoi) — jamais l'exe seul.
 
-Contrairement à BeamMeUp (Rust/Tauri), Hublot est du Node.js et utilise
-donc le mode natif Node.js **Single Executable Applications (SEA)**,
-disponible depuis Node 20 (marqué expérimental sur certaines versions ;
-testé ici avec succès sur Node 25).
+Un installateur Windows (`installer.iss`, **Inno Setup**, même outil que
+`justmakeQ`, pas de toolchain Rust/Tauri à introduire) embarque les deux
+dans un seul fichier `hublot-<version>-x64-setup.exe` : ajoute Hublot au
+PATH utilisateur (case cochée par défaut, décochable), fournit un
+désinstalleur propre. Construit et testé en conditions réelles (installation
+silencieuse `/CURRENTUSER /VERYSILENT`, exécution de l'exe installé,
+désinstallation avec retrait effectif du PATH et des fichiers) :
+
+```powershell
+npm run package
+& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+# -> build\hublot-0.0.0-dev-x64-setup.exe (APP_VERSION non défini localement)
+```
+
+Piège rencontré en testant réellement une installation silencieuse (pas
+une hypothèse) : `PrivilegesRequiredOverridesAllowed` doit inclure
+`commandline` en plus de `dialog`, sinon `/CURRENTUSER`/`/ALLUSERS` sont
+ignorés et l'installateur affiche quand même la boîte "Select Setup Install
+Mode" même avec `/VERYSILENT` — le processus reste bloqué indéfiniment sans
+qu'aucune erreur n'apparaisse. Piège Git Bash à part (pas Inno Setup) :
+un argument commençant par `/` s'y fait convertir en chemin Windows,
+d'où `MSYS_NO_PATHCONV=1` nécessaire pour tester `/CURRENTUSER` depuis
+ce shell précis.
+
+Les métadonnées Windows de l'exe (société, produit, description, copyright,
+icône) sont réécrites via **rcedit** dans `scripts/package-sea.mjs` — sans
+ça, l'exécutable affiche "Node.js" partout (Explorateur, gestionnaire des
+tâches) puisqu'il n'est au départ qu'une copie renommée du binaire `node`.
 
 ### Build local
 

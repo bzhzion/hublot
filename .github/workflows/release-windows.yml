@@ -56,22 +56,25 @@ jobs:
       - name: Installer les dependances npm
         run: npm ci
 
-      - name: Build + package (SEA)
+      - name: Build + package (SEA) + métadonnées Windows (rcedit)
         run: npm run package
 
-      - name: Empaqueter l'executable + node_modules/playwright-core en zip
-        id: artifact
+      # windows-latest (GitHub-hosted) n'a pas Inno Setup preinstalle,
+      # contrairement au runner self-hosted unraid-windows utilise par
+      # d'autres projets (justmakeQ) - meme motif que beammeup : un runner
+      # self-hosted exposerait l'infra a un risque sur ce repo public.
+      - name: Installer Inno Setup
+        run: choco install innosetup -y
         shell: pwsh
+
+      - name: Construire l'installateur (Inno Setup)
+        id: artifact
         env:
-          VERSION: ${{ steps.version.outputs.version }}
+          APP_VERSION: ${{ steps.version.outputs.version }}
+        shell: pwsh
         run: |
-          # playwright-core ne peut pas etre fondu dans le blob SEA (voir
-          # README, section Distribution) : il doit voyager a cote de
-          # hublot.exe, meme dossier. D'ou un zip plutot qu'un exe seul en
-          # asset de release.
-          $name = "hublot-$env:VERSION-x64.zip"
-          Compress-Archive -Path build/hublot.exe, build/node_modules -DestinationPath "build/$name"
-          "name=$name" >> $env:GITHUB_OUTPUT
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+          "name=hublot-$env:APP_VERSION-x64-setup.exe" >> $env:GITHUB_OUTPUT
 
       # TODO (signature) : contrairement a beammeup (azure/artifact-signing-action,
       # secrets AZURE_TENANT_ID/AZURE_CLIENT_ID/AZURE_CLIENT_SECRET deja
@@ -79,11 +82,11 @@ jobs:
       # Trusted Signing configures. Ne pas deviner une config qui echouerait
       # silencieusement ou bloquerait le workflow : quand les secrets seront
       # crees (meme compte de signature "breizhzion-public" que beammeup, a
-      # priori), ajouter ici une etape identique a celle de
-      # bzhzion/beammeup/.github/workflows/release-windows.yml avant l'etape
+      # priori), ajouter ici une etape identique a celle de justmakeQ (signe
+      # l'installateur produit par ISCC, pas juste hublot.exe) avant l'etape
       # "GitHub Release" ci-dessous. Sans signature, Windows SmartScreen
       # affichera un avertissement "editeur inconnu" au premier lancement de
-      # l'executable telecharge - attendu et documente dans le README tant
+      # l'installateur telecharge - attendu et documente dans le README tant
       # que ce TODO n'est pas leve.
 
       - name: GitHub Release

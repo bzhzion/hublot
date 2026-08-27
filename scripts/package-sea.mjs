@@ -37,6 +37,7 @@
 
 import { build } from 'esbuild';
 import { inject } from 'postject';
+import { rcedit } from 'rcedit';
 import { execFileSync } from 'node:child_process';
 import {
   cpSync,
@@ -89,6 +90,26 @@ async function main() {
   console.log(`[package-sea] copie du binaire node -> ${exeName}`);
   rmSync(exePath, { force: true });
   cpSync(process.execPath, exePath);
+
+  // Sans ca, l'executable affiche "Node.js" comme societe/produit/copyright
+  // (proprietes du vrai node.exe copie ci-dessus) dans l'explorateur Windows
+  // et le gestionnaire des taches. rcedit reecrit les ressources PE
+  // (VERSION_INFO + icone) avant l'injection du blob SEA, pas apres, pour
+  // que la derniere ecriture sur le fichier reste celle de postject.
+  console.log('[package-sea] metadonnees Windows (rcedit) ...');
+  const pkg = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf-8'));
+  await rcedit(exePath, {
+    'version-string': {
+      CompanyName: 'BREIZHZION',
+      ProductName: 'Hublot',
+      FileDescription: 'Hublot - navigateur Chromium partage entre agents IA',
+      LegalCopyright: 'Copyright BREIZHZION',
+      OriginalFilename: exeName,
+    },
+    'file-version': pkg.version,
+    'product-version': pkg.version,
+    icon: path.join(root, 'site', 'assets', 'favicon.ico'),
+  });
 
   console.log('[package-sea] injection du blob (postject) ...');
   const blob = readFileSync(blobPath);

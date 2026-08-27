@@ -42,14 +42,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ inputs.version }}
         run: |
-          # L'asset est un zip (hublot.exe + node_modules/playwright-core,
-          # voir README section Distribution), pas un exe seul : playwright-core
-          # ne survit pas au bundling SEA. wingetcreate accepte un installateur
-          # de type zip (--installer-type zip / -e wizard), a valider a la
-          # premiere soumission manuelle (voir README, pas encore faite).
+          # Un vrai installateur Inno Setup (installer.iss), pas un exe SEA
+          # seul ni un zip : embarque hublot.exe + node_modules/playwright-core
+          # (playwright-core ne survit pas au bundling SEA, doit voyager a
+          # cote), ajoute Hublot au PATH utilisateur, fournit un desinstalleur.
           $tag = "v$($env:VERSION)"
           $asset = (gh release view $tag --repo ${{ github.repository }} --json assets -q '.assets[].name' `
-                    | Where-Object { $_ -like '*.zip' } | Select-Object -First 1)
+                    | Where-Object { $_ -like '*-setup.exe' } | Select-Object -First 1)
           if (-not $asset) { throw "Aucun installeur trouve dans la release $tag" }
           Write-Host "Tag: $tag / asset: $asset"
           "tag=$tag" >> $env:GITHUB_OUTPUT
