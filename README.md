@@ -355,13 +355,11 @@ npm-install classique, un `require()` ordinaire suffit.
 - `.github/workflows/ci.yml` : build + packaging SEA sur Windows et Linux à
   chaque push/PR (vérification de compilation, pas de publication).
 - `.github/workflows/release-windows.yml` : déclenché sur tag `vX.Y.Z`,
-  build + package + publie une Release GitHub avec l'exécutable en asset.
-  **Pas de signature Azure Trusted Signing pour l'instant** : les secrets
-  (`AZURE_TENANT_ID`/`AZURE_CLIENT_ID`/`AZURE_CLIENT_SECRET`) ne sont pas
-  configurés côté Hublot. Un TODO explicite dans ce fichier indique où
-  ajouter l'étape de signature (identique à celle de `beammeup`) une fois
-  ces secrets créés. Sans signature, Windows SmartScreen affichera un
-  avertissement « éditeur inconnu » au premier lancement.
+  build + package + signe `hublot.exe` puis l'installateur produit par Inno
+  Setup (**Azure Trusted Signing**, même Service Principal partagé que
+  `beammeup`/`justmakeq`/`hae-app` — `breizhzion-signing` /
+  `breizhzion-public`, voir `docs/azure.md` du repo admin) + publie une
+  Release GitHub avec l'installateur signé en asset.
 - `.github/workflows/release-linux.yml` : même déclencheur, construit un
   `.deb` minimal (juste le binaire SEA copié dans `/usr/bin/hublot`, pas de
   dépendances) et le publie dans la même Release GitHub.
@@ -370,13 +368,13 @@ npm-install classique, un `require()` ordinaire suffit.
   la première soumission à `microsoft/winget-pkgs` doit être faite à la
   main (`wingetcreate new`, PR ouverte et mergée) avant que ce workflow
   puisse fonctionner (voir le squelette de manifeste ci-dessous).
-- `.github/workflows/publish-apt.yml` : squelette calqué sur celui de
-  `beammeup`, **ne fonctionne pas tel quel**. beammeup publie via une clé
-  SSH dédiée et restreinte côté serveur (commande forcée dans
-  `authorized_keys` sur axolotl, limitée à un paquet nommé `beammeup`, sans
-  shell ni lecture de fichiers). Hublot n'a pas encore cet accès configuré ;
-  même discipline à reproduire (clé à part, jamais réutiliser celle de
-  beammeup) avant d'activer ce workflow.
+- `.github/workflows/publish-apt.yml` : publie le `.deb` sur
+  `apt.breizhzion.com` via une clé SSH **dédiée et restreinte côté
+  serveur** (commande forcée `~/bin/hublot-apt-publish.sh` dans
+  `authorized_keys` sur axolotl, limitée au paquet `hublot`, sans shell ni
+  lecture de fichiers — même discipline que `beammeup`, clé distincte).
+  Testé en conditions réelles le 2026-08-27 : `apt install hublot`
+  fonctionnel.
 
 ### Manifeste winget (squelette)
 
