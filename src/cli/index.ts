@@ -435,4 +435,38 @@ program
     printResultAndExit(res);
   });
 
+program
+  .command('web')
+  .argument('<action>', 'on, off ou status')
+  .option('--bind <addr>', 'adresse:port d\'écoute (défaut: 127.0.0.1:9871)')
+  .option('--no-token', 'désactive le jeton (accès ouvert à qui joint cette adresse, à vos risques)')
+  .description(
+    'Active/désactive l\'accès web distant : une page mobile qui affiche la capture d\'écran ' +
+      'de l\'onglet choisi, rafraîchie en boucle. Fermé par défaut, jeton auto-généré sauf --no-token. ' +
+      'Redémarre automatiquement dans le même état si le broker est relancé.',
+  )
+  .action(async (action, opts) => {
+    if (action === 'on') {
+      const bind = opts.bind || '127.0.0.1:9871';
+      const res = await callBroker({ cmd: 'web_on', bind, noToken: !!opts.noToken });
+      if (!res.ok) return printResultAndExit(res);
+      console.log(res.message ?? 'ok');
+    } else if (action === 'off') {
+      const res = await callBroker({ cmd: 'web_off' });
+      if (!res.ok) return printResultAndExit(res);
+      console.log(res.message ?? 'ok');
+    } else if (action === 'status') {
+      const res = await callBroker({ cmd: 'web_status' });
+      if (!res.ok) return printResultAndExit(res);
+      if (res.web?.enabled) {
+        console.log(`Actif sur ${res.web.bind}${res.web.hasToken ? ' (jeton requis)' : ' (SANS jeton)'}`);
+      } else {
+        console.log('Accès web distant : inactif.');
+      }
+    } else {
+      console.error('Action invalide : utiliser "on", "off" ou "status".');
+      process.exit(1);
+    }
+  });
+
 program.parseAsync(process.argv);

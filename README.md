@@ -181,6 +181,35 @@ Toutes ces commandes ont été testées en conditions réelles (pas juste compil
 locale : `select`/`hover`/`press`/`drag`/`upload`/`dialog`/`wait`/`find`/`evaluate`/`back`/
 `resize`/`network`/`snapshot` produisent bien l'effet attendu sur un vrai Chromium.
 
+### Accès web distant (optionnel, fermé par défaut)
+
+Même principe que `beammeup web on|off|status` : une petite page mobile qui affiche la capture
+d'écran de l'onglet choisi, rafraîchie en boucle (polling, pas de WebSocket, pour rester simple
+et auditable).
+
+```bash
+# Active l'accès sur cette adresse:port (jeton auto-généré, imprimé dans l'URL affichée)
+hublot web on --bind 100.x.x.x:9871
+
+# Désactive un jeton (accès ouvert à qui joint cette adresse — à vos risques)
+hublot web on --bind 100.x.x.x:9871 --no-token
+
+# État actuel
+hublot web status
+
+# Coupe l'accès
+hublot web off
+```
+
+Testé en conditions réelles : rejet `401` sans jeton, page/`/tabs`/`/screenshot` accessibles avec
+le bon jeton, sélecteur d'onglet fonctionnel, et l'accès **redémarre automatiquement dans le même
+état** (même bind, même jeton) si le broker est relancé — les réglages persistent dans
+`%LOCALAPPDATA%\hublot\remote.json`, même mécanisme que `beammeup`.
+
+⚠️ Aucune restriction côté code sur l'adresse d'écoute (`0.0.0.0` fonctionnerait si demandé
+explicitement), mais ni ce README ni un agent ne doivent choisir ça à ta place : utilise ton IP
+Tailscale, jamais `0.0.0.0`, sauf besoin explicite et assumé.
+
 ### ⚠️ `run-code-unsafe` : accès Node complet, pas juste au DOM de la page
 
 ```bash

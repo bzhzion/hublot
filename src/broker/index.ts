@@ -9,10 +9,12 @@ import * as fs from 'fs';
 import * as net from 'net';
 import * as path from 'path';
 import { chromium, BrowserContext, Page, ConsoleMessage, Dialog, Request } from './playwrightCore.js';
-import { BROKER_HOST, BROKER_PORT, PROFILE_DIR, TABS_FILE, TOKEN_FILE, screenshotsDir, HUBLOT_HOME } from '../shared/paths.js';
+import { BROKER_HOST, BROKER_PORT, PROFILE_DIR, TABS_FILE, TOKEN_FILE, REMOTE_CONFIG_FILE, screenshotsDir, HUBLOT_HOME } from '../shared/paths.js';
 import { BrokerRequest, BrokerResponse, ConsoleLogEntry, FindMatch, NetworkLogEntry, TabInfo } from '../shared/types.js';
 import { ensureAuthToken, isAuthorized } from './auth.js';
 import { isValidLabel } from '../shared/validate.js';
+import { generateToken, readRemoteConfig, startRemoteWeb, stopRemoteWeb, writeRemoteConfig, RemoteConfig } from './remoteWeb.js';
+import type { Server as HttpServer } from 'http';
 
 const MAX_CONSOLE_ENTRIES = 500;
 const MAX_NETWORK_ENTRIES = 500;
@@ -32,6 +34,8 @@ let authToken = '';
 // se declarer demarre, plutot que de se fier a un simple ping qui repondrait
 // trop tot.
 let ready = false;
+let remoteWebServer: HttpServer | null = null;
+let remoteWebConfig: RemoteConfig = { enabled: false, bind: '127.0.0.1:9871', token: null };
 
 interface TabEntry {
   label: string;
@@ -369,6 +373,42 @@ async function handle(req: BrokerRequest): Promise<BrokerResponse> {
       return { ok: true };
     }
 
+    case 'web_on': {
+      if (remoteWebServer) {
+        return { ok: false, error: 'accès web distant déjà actif ("hublot web off" avant de relancer avec d\'autres options)' };
+      }
+      const token = req.noToken ? null : generateToken();
+      remoteWebServer = startRemoteWeb(req.bind, token, {
+        listTabs: () => [...tabs.values()].map((t) => ({ label: t.label, tabId: t.tabId, url: safeUrl(t.page) })),
+        screenshotBuffer: (label) => requireTab(label).page.screenshot(),
+      });
+      remoteWebConfig = { enabled: true, bind: req.bind, token };
+      writeRemoteConfig(REMOTE_CONFIG_FILE, remoteWebConfig);
+      const url = token ? `http://${req.bind}/?token=${token}` : `http://${req.bind}/`;
+      return {
+        ok: true,
+        message: token ? `accès actif : ${url}` : `accès actif SANS jeton (ouvert à qui joint cette adresse) : ${url}`,
+        web: { enabled: true, bind: req.bind, hasToken: !!token },
+      };
+    }
+
+    case 'web_off': {
+      if (remoteWebServer) {
+        await stopRemoteWeb(remoteWebServer);
+        remoteWebServer = null;
+      }
+      remoteWebConfig = { ...remoteWebConfig, enabled: false, token: null };
+      writeRemoteConfig(REMOTE_CONFIG_FILE, remoteWebConfig);
+      return { ok: true, message: 'accès web distant désactivé' };
+    }
+
+    case 'web_status': {
+      return {
+        ok: true,
+        web: { enabled: !!remoteWebServer, bind: remoteWebConfig.bind, hasToken: !!remoteWebConfig.token },
+      };
+    }
+
     case 'stop': {
       setTimeout(() => shutdown(0), 50);
       return { ok: true, message: 'arrêt en cours' };
@@ -467,6 +507,17 @@ export async function runBroker(): Promise<void> {
 
   await restorePersistedTabs(context);
   ready = true;
+
+  // Redemarre l'acces web distant automatiquement s'il etait actif avant un
+  // restart du broker (meme reglages persistes, meme jeton), plutot que de
+  // forcer painteau a retaper "hublot web on" a chaque fois.
+  remoteWebConfig = readRemoteConfig(REMOTE_CONFIG_FILE);
+  if (remoteWebConfig.enabled) {
+    remoteWebServer = startRemoteWeb(remoteWebConfig.bind, remoteWebConfig.token, {
+      listTabs: () => [...tabs.values()].map((t) => ({ label: t.label, tabId: t.tabId, url: safeUrl(t.page) })),
+      screenshotBuffer: (label) => requireTab(label).page.screenshot(),
+    });
+  }
 
   context.on('close', () => shutdown(0));
   process.on('SIGINT', () => shutdown(0));

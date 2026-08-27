@@ -24,6 +24,12 @@ export interface TabInfo {
   url: string;
 }
 
+export interface RemoteWebStatus {
+  enabled: boolean;
+  bind?: string;
+  hasToken?: boolean;
+}
+
 export type BrokerCommand =
   | { cmd: 'ping' }
   | { cmd: 'status' }
@@ -55,6 +61,13 @@ export type BrokerCommand =
   | { cmd: 'console'; label: string }
   | { cmd: 'network'; label: string }
   | { cmd: 'close'; label: string }
+  // Acces web distant optionnel (voir broker/remoteWeb.ts), meme principe
+  // que "beammeup web on/off/status" : ferme par defaut, jeton auto-genere
+  // sauf --no-token explicite, aucune restriction sur l'adresse d'ecoute
+  // (0.0.0.0 accepte si c'est le choix explicite de l'utilisateur).
+  | { cmd: 'web_on'; bind: string; noToken?: boolean }
+  | { cmd: 'web_off' }
+  | { cmd: 'web_status' }
   | { cmd: 'stop' };
 
 // Le jeton d'auth (voir broker/auth.ts) est ajoute par le client au moment de
@@ -74,5 +87,6 @@ export type BrokerResponse =
       result?: string;
       message?: string;
       ready?: boolean;
+      web?: RemoteWebStatus;
     }
   | { ok: false; error: string };

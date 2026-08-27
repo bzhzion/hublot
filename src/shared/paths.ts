@@ -16,6 +16,10 @@ export const PROFILE_DIR = path.join(HUBLOT_HOME, 'profile');
 export const TABS_FILE = path.join(HUBLOT_HOME, 'tabs.json');
 export const TOKEN_FILE = path.join(HUBLOT_HOME, 'token');
 export const BROKER_LOG_FILE = path.join(HUBLOT_HOME, 'broker.log');
+// Reglages de l'acces web distant optionnel (voir broker/remoteWeb.ts),
+// meme pattern que remote.json cote beammeup : persiste pour redemarrer
+// automatiquement dans le meme etat si le broker est relance.
+export const REMOTE_CONFIG_FILE = path.join(HUBLOT_HOME, 'remote.json');
 
 export function screenshotsDir(): string {
   const tempDir = process.env.TEMP || process.env.TMP || os.tmpdir();
