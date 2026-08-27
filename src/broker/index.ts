@@ -8,7 +8,7 @@
 import * as fs from 'fs';
 import * as net from 'net';
 import * as path from 'path';
-import { chromium, BrowserContext, Page, ConsoleMessage, Dialog, Request } from './playwrightCore.js';
+import { chromium, BrowserContext, Page, Frame, ConsoleMessage, Dialog, Request } from './playwrightCore.js';
 import { BROKER_HOST, BROKER_PORT, PROFILE_DIR, TABS_FILE, TOKEN_FILE, REMOTE_CONFIG_FILE, screenshotsDir, HUBLOT_HOME } from '../shared/paths.js';
 import { BrokerRequest, BrokerResponse, ConsoleLogEntry, FindMatch, NetworkLogEntry, TabInfo } from '../shared/types.js';
 import { ensureAuthToken, isAuthorized } from './auth.js';
@@ -187,6 +187,23 @@ function requireTab(label: string): TabEntry {
   return entry;
 }
 
+// Beaucoup de formulaires de connexion tiers (Apple ID, Stripe...) embarquent
+// leur propre champ dans un <iframe> cross-origin (ex. aid-auth-widget sur
+// appstoreconnect.apple.com) : un page.locator() classique ne voit jamais
+// dedans, il faut cibler la Frame elle-meme. On matche par sous-chaine de son
+// URL plutot que par selecteur CSS de l'element <iframe> : plus simple a
+// deviner pour un agent qui vient de recevoir un screenshot, sans avoir a
+// inspecter le DOM parent pour trouver le bon <iframe id="...">.
+function resolveFrame(page: Page, frameUrlSubstring?: string): Page | Frame {
+  if (!frameUrlSubstring) return page;
+  const frame = page.frames().find((f) => f.url().includes(frameUrlSubstring));
+  if (!frame) {
+    const known = page.frames().map((f) => f.url()).join(', ');
+    throw new Error(`aucune iframe dont l'URL contient "${frameUrlSubstring}" (frames connues : ${known || 'aucune'})`);
+  }
+  return frame;
+}
+
 async function handle(req: BrokerRequest): Promise<BrokerResponse> {
   if ('label' in req && !isValidLabel(req.label)) {
     return { ok: false, error: 'label invalide : lettres/chiffres/tirets/underscores uniquement, 64 caracteres max, doit commencer par un caractere alphanumerique' };
@@ -227,26 +244,26 @@ async function handle(req: BrokerRequest): Promise<BrokerResponse> {
 
     case 'click': {
       const entry = requireTab(req.label);
-      await entry.page.click(req.selector);
+      await resolveFrame(entry.page, req.frame).locator(req.selector).click();
       return { ok: true };
     }
 
     case 'hover': {
       const entry = requireTab(req.label);
-      await entry.page.locator(req.selector).hover();
+      await resolveFrame(entry.page, req.frame).locator(req.selector).hover();
       return { ok: true };
     }
 
     case 'type': {
       const entry = requireTab(req.label);
-      await entry.page.locator(req.selector).fill(req.text);
+      await resolveFrame(entry.page, req.frame).locator(req.selector).fill(req.text);
       return { ok: true };
     }
 
     case 'press': {
       const entry = requireTab(req.label);
       if (req.selector) {
-        await entry.page.locator(req.selector).press(req.key);
+        await resolveFrame(entry.page, req.frame).locator(req.selector).press(req.key);
       } else {
         await entry.page.keyboard.press(req.key);
       }
@@ -255,19 +272,20 @@ async function handle(req: BrokerRequest): Promise<BrokerResponse> {
 
     case 'select': {
       const entry = requireTab(req.label);
-      await entry.page.locator(req.selector).selectOption(req.value);
+      await resolveFrame(entry.page, req.frame).locator(req.selector).selectOption(req.value);
       return { ok: true };
     }
 
     case 'drag': {
       const entry = requireTab(req.label);
-      await entry.page.locator(req.source).dragTo(entry.page.locator(req.target));
+      const scope = resolveFrame(entry.page, req.frame);
+      await scope.locator(req.source).dragTo(scope.locator(req.target));
       return { ok: true };
     }
 
     case 'upload': {
       const entry = requireTab(req.label);
-      await entry.page.locator(req.selector).setInputFiles(req.files.split(',').map((f) => f.trim()));
+      await resolveFrame(entry.page, req.frame).locator(req.selector).setInputFiles(req.files.split(',').map((f) => f.trim()));
       return { ok: true };
     }
 
@@ -279,11 +297,12 @@ async function handle(req: BrokerRequest): Promise<BrokerResponse> {
 
     case 'wait': {
       const entry = requireTab(req.label);
+      const scope = resolveFrame(entry.page, req.frame);
       const timeout = req.timeoutMs ?? 30000;
       if (req.selector) {
-        await entry.page.locator(req.selector).waitFor({ timeout });
+        await scope.locator(req.selector).waitFor({ timeout });
       } else if (req.text) {
-        await entry.page.getByText(req.text).first().waitFor({ timeout });
+        await scope.getByText(req.text).first().waitFor({ timeout });
       } else {
         throw new Error('wait necessite --selector ou --text');
       }
@@ -292,7 +311,7 @@ async function handle(req: BrokerRequest): Promise<BrokerResponse> {
 
     case 'find': {
       const entry = requireTab(req.label);
-      const locator = entry.page.getByText(req.text, { exact: false });
+      const locator = resolveFrame(entry.page, req.frame).getByText(req.text, { exact: false });
       const count = Math.min(await locator.count(), MAX_FIND_MATCHES);
       const matches: FindMatch[] = [];
       for (let i = 0; i < count; i++) {
@@ -333,9 +352,12 @@ async function handle(req: BrokerRequest): Promise<BrokerResponse> {
 
     case 'extract': {
       const entry = requireTab(req.label);
+      const scope = resolveFrame(entry.page, req.frame);
       const text = req.selector
-        ? await entry.page.locator(req.selector).innerText()
-        : await entry.page.evaluate(() => document.body.innerText);
+        ? await scope.locator(req.selector).innerText()
+        : req.frame
+          ? await scope.locator('body').innerText()
+          : await entry.page.evaluate(() => document.body.innerText);
       return { ok: true, text };
     }
 

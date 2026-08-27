@@ -36,16 +36,16 @@ export type BrokerCommand =
   | { cmd: 'open'; label: string; url?: string }
   | { cmd: 'navigate'; label: string; url: string }
   | { cmd: 'back'; label: string }
-  | { cmd: 'click'; label: string; selector: string }
-  | { cmd: 'hover'; label: string; selector: string }
-  | { cmd: 'type'; label: string; selector: string; text: string }
-  | { cmd: 'press'; label: string; selector?: string; key: string }
-  | { cmd: 'select'; label: string; selector: string; value: string }
-  | { cmd: 'drag'; label: string; source: string; target: string }
-  | { cmd: 'upload'; label: string; selector: string; files: string }
+  | { cmd: 'click'; label: string; selector: string; frame?: string }
+  | { cmd: 'hover'; label: string; selector: string; frame?: string }
+  | { cmd: 'type'; label: string; selector: string; text: string; frame?: string }
+  | { cmd: 'press'; label: string; selector?: string; key: string; frame?: string }
+  | { cmd: 'select'; label: string; selector: string; value: string; frame?: string }
+  | { cmd: 'drag'; label: string; source: string; target: string; frame?: string }
+  | { cmd: 'upload'; label: string; selector: string; files: string; frame?: string }
   | { cmd: 'dialog'; label: string; action: 'accept' | 'dismiss'; text?: string }
-  | { cmd: 'wait'; label: string; selector?: string; text?: string; timeoutMs?: number }
-  | { cmd: 'find'; label: string; text: string }
+  | { cmd: 'wait'; label: string; selector?: string; text?: string; timeoutMs?: number; frame?: string }
+  | { cmd: 'find'; label: string; text: string; frame?: string }
   | { cmd: 'evaluate'; label: string; expression: string }
   // DANGER volontaire : execute du code Playwright arbitraire dans le
   // process du broker (Node complet : fs, child_process, reseau...), pas
@@ -55,7 +55,7 @@ export type BrokerCommand =
   // docs/hublot.md, registre d'audit, section "risque accepte".
   | { cmd: 'run_unsafe'; label: string; code: string }
   | { cmd: 'resize'; label: string; width: number; height: number }
-  | { cmd: 'extract'; label: string; selector?: string }
+  | { cmd: 'extract'; label: string; selector?: string; frame?: string }
   | { cmd: 'snapshot'; label: string }
   | { cmd: 'screenshot'; label: string }
   | { cmd: 'console'; label: string }

@@ -30,4 +30,4 @@ function loadPlaywrightCore(): typeof import('playwright-core') {
 }
 
 export const { chromium } = loadPlaywrightCore();
-export type { BrowserContext, Page, ConsoleMessage, Dialog, Request } from 'playwright-core';
+export type { BrowserContext, Page, Frame, ConsoleMessage, Dialog, Request } from 'playwright-core';

@@ -148,6 +148,15 @@ hublot wait --label claude-main --selector ".result" --timeout-ms 10000
 # Trouve les éléments contenant un texte, sans deviner un sélecteur CSS
 hublot find --label claude-main --text "Ajouter au panier"
 
+# --frame cible un <iframe> cross-origin plutot que la page principale (ex:
+# le widget de connexion Apple ID embarque par appstoreconnect.apple.com,
+# heberge sur idmsa.apple.com) : click/hover/type/press/select/drag/upload/
+# wait/find/extract acceptent tous cette option. Se determine par sous-chaine
+# de l'URL de la frame, pas par selecteur CSS de l'element <iframe> lui-meme
+# (utiliser `run-code-unsafe` avec `page.frames().map(f => f.url())` pour la
+# lister si elle n'est pas evidente).
+hublot type --label appstoreconnect --frame idmsa.apple.com --selector "input[type=password]" --text "..."
+
 # Exécute du JavaScript arbitraire dans la page et affiche le résultat (JSON)
 hublot evaluate --label claude-main --expression "document.title"
 

@@ -186,10 +186,11 @@ program
   .command('click')
   .requiredOption('--label <label>', 'label de l\'onglet')
   .requiredOption('--selector <selector>', 'sélecteur CSS Playwright')
+  .option('--frame <urlSubstring>', 'cibler l\'iframe dont l\'URL contient cette sous-chaîne, plutôt que la page principale')
   .description('Clique sur un élément')
   .action(async (opts) => {
     requireValidLabel(opts.label);
-    const res = await callBroker({ cmd: 'click', label: opts.label, selector: opts.selector });
+    const res = await callBroker({ cmd: 'click', label: opts.label, selector: opts.selector, frame: opts.frame });
     printResultAndExit(res);
   });
 
@@ -197,10 +198,11 @@ program
   .command('hover')
   .requiredOption('--label <label>', 'label de l\'onglet')
   .requiredOption('--selector <selector>', 'sélecteur CSS Playwright')
+  .option('--frame <urlSubstring>', 'cibler l\'iframe dont l\'URL contient cette sous-chaîne, plutôt que la page principale')
   .description('Survole un élément (hover)')
   .action(async (opts) => {
     requireValidLabel(opts.label);
-    const res = await callBroker({ cmd: 'hover', label: opts.label, selector: opts.selector });
+    const res = await callBroker({ cmd: 'hover', label: opts.label, selector: opts.selector, frame: opts.frame });
     printResultAndExit(res);
   });
 
@@ -209,10 +211,11 @@ program
   .requiredOption('--label <label>', 'label de l\'onglet')
   .requiredOption('--selector <selector>', 'sélecteur CSS Playwright')
   .requiredOption('--text <text>', 'texte à saisir')
+  .option('--frame <urlSubstring>', 'cibler l\'iframe dont l\'URL contient cette sous-chaîne, plutôt que la page principale')
   .description('Saisit du texte dans un champ (remplace la valeur, ne simule pas de vraies frappes clavier)')
   .action(async (opts) => {
     requireValidLabel(opts.label);
-    const res = await callBroker({ cmd: 'type', label: opts.label, selector: opts.selector, text: opts.text });
+    const res = await callBroker({ cmd: 'type', label: opts.label, selector: opts.selector, text: opts.text, frame: opts.frame });
     printResultAndExit(res);
   });
 
@@ -221,10 +224,11 @@ program
   .requiredOption('--label <label>', 'label de l\'onglet')
   .option('--selector <selector>', 'sélecteur CSS Playwright (sinon l\'élément actuellement focus)')
   .requiredOption('--key <key>', 'touche a presser, ex: Enter, Tab, Escape, ArrowDown')
+  .option('--frame <urlSubstring>', 'cibler l\'iframe dont l\'URL contient cette sous-chaîne, plutôt que la page principale')
   .description('Presse une touche clavier, sur un élément ou globalement')
   .action(async (opts) => {
     requireValidLabel(opts.label);
-    const res = await callBroker({ cmd: 'press', label: opts.label, selector: opts.selector, key: opts.key });
+    const res = await callBroker({ cmd: 'press', label: opts.label, selector: opts.selector, key: opts.key, frame: opts.frame });
     printResultAndExit(res);
   });
 
@@ -233,10 +237,11 @@ program
   .requiredOption('--label <label>', 'label de l\'onglet')
   .requiredOption('--selector <selector>', 'sélecteur CSS Playwright (élément <select>)')
   .requiredOption('--value <value>', 'valeur de l\'option a sélectionner')
+  .option('--frame <urlSubstring>', 'cibler l\'iframe dont l\'URL contient cette sous-chaîne, plutôt que la page principale')
   .description('Sélectionne une option dans un menu déroulant')
   .action(async (opts) => {
     requireValidLabel(opts.label);
-    const res = await callBroker({ cmd: 'select', label: opts.label, selector: opts.selector, value: opts.value });
+    const res = await callBroker({ cmd: 'select', label: opts.label, selector: opts.selector, value: opts.value, frame: opts.frame });
     printResultAndExit(res);
   });
 
@@ -245,10 +250,11 @@ program
   .requiredOption('--label <label>', 'label de l\'onglet')
   .requiredOption('--source <selector>', 'sélecteur CSS de l\'élément a glisser')
   .requiredOption('--target <selector>', 'sélecteur CSS de la cible du dépôt')
+  .option('--frame <urlSubstring>', 'cibler l\'iframe dont l\'URL contient cette sous-chaîne, plutôt que la page principale')
   .description('Glisse-dépose un élément vers un autre (drag and drop)')
   .action(async (opts) => {
     requireValidLabel(opts.label);
-    const res = await callBroker({ cmd: 'drag', label: opts.label, source: opts.source, target: opts.target });
+    const res = await callBroker({ cmd: 'drag', label: opts.label, source: opts.source, target: opts.target, frame: opts.frame });
     printResultAndExit(res);
   });
 
@@ -257,10 +263,11 @@ program
   .requiredOption('--label <label>', 'label de l\'onglet')
   .requiredOption('--selector <selector>', 'sélecteur CSS de l\'input file')
   .requiredOption('--files <files>', 'chemin(s) de fichier, separes par des virgules')
+  .option('--frame <urlSubstring>', 'cibler l\'iframe dont l\'URL contient cette sous-chaîne, plutôt que la page principale')
   .description('Envoie un ou plusieurs fichiers dans un champ <input type=file>')
   .action(async (opts) => {
     requireValidLabel(opts.label);
-    const res = await callBroker({ cmd: 'upload', label: opts.label, selector: opts.selector, files: opts.files });
+    const res = await callBroker({ cmd: 'upload', label: opts.label, selector: opts.selector, files: opts.files, frame: opts.frame });
     printResultAndExit(res);
   });
 
@@ -287,6 +294,7 @@ program
   .option('--selector <selector>', 'attend que cet élément soit visible')
   .option('--text <text>', 'attend que ce texte apparaisse sur la page')
   .option('--timeout-ms <ms>', 'délai maximum en millisecondes (defaut: 30000)')
+  .option('--frame <urlSubstring>', 'cibler l\'iframe dont l\'URL contient cette sous-chaîne, plutôt que la page principale')
   .description('Attend explicitement l\'apparition d\'un élément ou d\'un texte')
   .action(async (opts) => {
     requireValidLabel(opts.label);
@@ -300,6 +308,7 @@ program
       selector: opts.selector,
       text: opts.text,
       timeoutMs: opts.timeoutMs ? Number(opts.timeoutMs) : undefined,
+      frame: opts.frame,
     });
     printResultAndExit(res);
   });
@@ -308,10 +317,11 @@ program
   .command('find')
   .requiredOption('--label <label>', 'label de l\'onglet')
   .requiredOption('--text <text>', 'texte a rechercher (correspondance partielle)')
+  .option('--frame <urlSubstring>', 'cibler l\'iframe dont l\'URL contient cette sous-chaîne, plutôt que la page principale')
   .description('Trouve les éléments contenant ce texte, sans avoir a deviner un sélecteur CSS')
   .action(async (opts) => {
     requireValidLabel(opts.label);
-    const res = await callBroker({ cmd: 'find', label: opts.label, text: opts.text });
+    const res = await callBroker({ cmd: 'find', label: opts.label, text: opts.text, frame: opts.frame });
     if (!res.ok) return printResultAndExit(res);
     for (const m of res.matches ?? []) {
       console.log(`<${m.tag}> ${m.text}`);
@@ -369,10 +379,11 @@ program
   .command('extract')
   .requiredOption('--label <label>', 'label de l\'onglet')
   .option('--selector <selector>', 'sélecteur CSS Playwright (sinon tout le body)')
+  .option('--frame <urlSubstring>', 'cibler l\'iframe dont l\'URL contient cette sous-chaîne, plutôt que la page principale')
   .description('Extrait le texte (innerText) d\'un élément ou de la page')
   .action(async (opts) => {
     requireValidLabel(opts.label);
-    const res = await callBroker({ cmd: 'extract', label: opts.label, selector: opts.selector });
+    const res = await callBroker({ cmd: 'extract', label: opts.label, selector: opts.selector, frame: opts.frame });
     if (!res.ok) return printResultAndExit(res);
     console.log(res.text ?? '');
   });

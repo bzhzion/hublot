@@ -81,6 +81,8 @@ body {
   font-size: 16px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 h1,
@@ -112,6 +114,9 @@ pre {
   border-radius: var(--radius-sm);
   overflow-x: auto;
   border-left: 4px solid var(--teal);
+  white-space: pre-wrap;
+  word-break: break-word;
+  min-width: 0;
 }
 
 pre code {
@@ -701,6 +706,10 @@ main {
   grid-template-columns: 46px 1fr;
   gap: 1rem;
   align-items: start;
+}
+
+.tx-body {
+  min-width: 0;
 }
 
 .tx-id {
