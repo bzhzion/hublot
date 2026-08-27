@@ -7,10 +7,10 @@ import { spawn } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Command } from 'commander';
-import { isBrokerReady, isBrokerRunning, sendRequest } from './client';
-import { BrokerResponse } from '../shared/types';
-import { HUBLOT_HOME, BROKER_LOG_FILE } from '../shared/paths';
-import { isValidLabel } from '../shared/validate';
+import { isBrokerReady, isBrokerRunning, sendRequest } from './client.js';
+import { BrokerResponse } from '../shared/types.js';
+import { HUBLOT_HOME, BROKER_LOG_FILE } from '../shared/paths.js';
+import { isValidLabel } from '../shared/validate.js';
 
 // Meme regle que le broker (defense en profondeur) : echouer tot avec un
 // message clair plutot que de laisser le broker renvoyer une erreur generique
@@ -49,7 +49,7 @@ program
   .command('__broker', { hidden: true })
   .description('(interne, ne pas utiliser) lance la logique broker dans le process courant')
   .action(async () => {
-    const { runBroker } = await import('../broker');
+    const { runBroker } = await import('../broker/index.js');
     await runBroker().catch((err: Error) => {
       console.error('[hublot] échec au démarrage du broker:', err);
       process.exit(1);

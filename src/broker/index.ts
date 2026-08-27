@@ -8,11 +8,11 @@
 import * as fs from 'fs';
 import * as net from 'net';
 import * as path from 'path';
-import { chromium, BrowserContext, Page, ConsoleMessage } from './playwrightCore';
-import { BROKER_HOST, BROKER_PORT, PROFILE_DIR, TABS_FILE, TOKEN_FILE, screenshotsDir, HUBLOT_HOME } from '../shared/paths';
-import { BrokerRequest, BrokerResponse, ConsoleLogEntry, TabInfo } from '../shared/types';
-import { ensureAuthToken, isAuthorized } from './auth';
-import { isValidLabel } from '../shared/validate';
+import { chromium, BrowserContext, Page, ConsoleMessage } from './playwrightCore.js';
+import { BROKER_HOST, BROKER_PORT, PROFILE_DIR, TABS_FILE, TOKEN_FILE, screenshotsDir, HUBLOT_HOME } from '../shared/paths.js';
+import { BrokerRequest, BrokerResponse, ConsoleLogEntry, TabInfo } from '../shared/types.js';
+import { ensureAuthToken, isAuthorized } from './auth.js';
+import { isValidLabel } from '../shared/validate.js';
 
 const MAX_CONSOLE_ENTRIES = 500;
 // Une requete legitime (label/selector/texte/URL) ne depasse jamais quelques

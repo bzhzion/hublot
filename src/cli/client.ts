@@ -1,7 +1,7 @@
 import * as net from 'net';
-import { BROKER_HOST, BROKER_PORT, TOKEN_FILE } from '../shared/paths';
-import { BrokerCommand, BrokerResponse } from '../shared/types';
-import { readAuthToken } from '../broker/auth';
+import { BROKER_HOST, BROKER_PORT, TOKEN_FILE } from '../shared/paths.js';
+import { BrokerCommand, BrokerResponse } from '../shared/types.js';
+import { readAuthToken } from '../broker/auth.js';
 
 const CONNECT_TIMEOUT_MS = 2000;
 const RESPONSE_TIMEOUT_MS = 30000;
