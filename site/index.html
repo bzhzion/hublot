@@ -408,20 +408,31 @@
     </div>
     <div class="panel-body">
       <p class="lede-small">
-        A packaged installer (winget) is planned but not published yet. For now, Hublot is
-        built from source, on Windows.
+        Version 0.1.0 is out. Windows gets a proper installer (adds <code>hublot</code> to your
+        PATH); Linux gets a <code>.deb</code>. winget is planned but not published yet.
       </p>
 
       <div class="platform-grid">
         <article class="platform-card">
-          <span class="platform-code accent-teal">BUILD FROM SOURCE</span>
-          <p>Clone the repository, then install and compile.</p>
-          <pre><code>npm install
-npm run build</code></pre>
+          <span class="platform-code accent-teal">WINDOWS</span>
+          <p>Installer (Inno Setup): adds Hublot to your user PATH, ships with an uninstaller.</p>
+          <pre><code>hublot-0.1.0-x64-setup.exe</code></pre>
+          <a class="btn btn--primary" href="https://github.com/bzhzion/hublot/releases/download/v0.1.0/hublot-0.1.0-x64-setup.exe">
+            Download for Windows
+          </a>
         </article>
 
         <article class="platform-card">
-          <span class="platform-code accent-brass">BROWSER ENGINE</span>
+          <span class="platform-code accent-brass">LINUX</span>
+          <p>Debian/Ubuntu package.</p>
+          <pre><code>sudo dpkg -i hublot_0.1.0_amd64.deb</code></pre>
+          <a class="btn btn--ghost" href="https://github.com/bzhzion/hublot/releases/download/v0.1.0/hublot_0.1.0_amd64.deb">
+            Download the .deb
+          </a>
+        </article>
+
+        <article class="platform-card">
+          <span class="platform-code accent-faint">BROWSER ENGINE</span>
           <p>
             Hublot reuses whatever Chromium-based browser is already installed, in order:
             Google Chrome, then Microsoft Edge. If neither is present, or to keep Hublot
@@ -434,7 +445,7 @@ npm run build</code></pre>
           <span class="platform-code accent-faint">WINGET PACKAGE</span>
           <p>
             Coming soon, following the same signed-release pattern already in place for
-            sibling tools. Until then, building from source above is the supported path.
+            sibling tools. Until then, the installer above is the supported path.
           </p>
           <pre><code>winget install Breizhzion.Hublot
 # not published yet</code></pre>
@@ -442,8 +453,8 @@ npm run build</code></pre>
       </div>
 
       <div class="cta-row">
-        <a class="btn btn--primary btn--large" href="https://github.com/bzhzion/hublot" target="_blank" rel="noopener">
-          Get the source
+        <a class="btn btn--primary btn--large" href="https://github.com/bzhzion/hublot/releases/latest" target="_blank" rel="noopener">
+          All releases
         </a>
         <a class="btn btn--ghost" href="https://github.com/bzhzion/hublot#installation" target="_blank" rel="noopener">
           Full install notes
@@ -451,11 +462,12 @@ npm run build</code></pre>
       </div>
 
       <p class="tutorial-footnote">
-        Known limits of this early version: Windows only for now; <code>hublot type</code>
-        replaces a field's value outright rather than simulating real keystrokes, which
-        covers almost every form but won't trigger handlers that specifically listen for
-        <code>keydown</code>; the Playwright-downloaded Chromium fallback has not yet been
-        exercised on a machine without Chrome or Edge already installed.
+        Known limits of this early version: <code>hublot type</code> replaces a field's value
+        outright rather than simulating real keystrokes, which covers almost every form but
+        won't trigger handlers that specifically listen for <code>keydown</code>; the
+        Playwright-downloaded Chromium fallback has not yet been exercised on a machine without
+        Chrome or Edge already installed; the installer is not yet code-signed, so Windows
+        SmartScreen may warn on first run.
       </p>
     </div>
   </section>
