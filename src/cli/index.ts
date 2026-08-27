@@ -7,7 +7,7 @@ import { spawn } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Command } from 'commander';
-import { isBrokerRunning, sendRequest } from './client';
+import { isBrokerReady, isBrokerRunning, sendRequest } from './client';
 import { BrokerResponse } from '../shared/types';
 import { HUBLOT_HOME, BROKER_LOG_FILE } from '../shared/paths';
 import { isValidLabel } from '../shared/validate';
@@ -65,7 +65,7 @@ function printResultAndExit(res: BrokerResponse): never {
 }
 
 async function callBroker(req: Parameters<typeof sendRequest>[0]): Promise<BrokerResponse> {
-  if (!(await isBrokerRunning())) {
+  if (!(await isBrokerReady())) {
     console.error('Le broker Hublot ne répond pas. Lancer "hublot start" d\'abord.');
     process.exit(1);
   }
@@ -76,29 +76,37 @@ program
   .command('start')
   .description('Démarre le broker (Chromium visible + profil persistant) si pas déjà lancé')
   .action(async () => {
-    if (await isBrokerRunning()) {
+    if (await isBrokerReady()) {
       console.log('Le broker Hublot tourne déjà.');
       return;
     }
-    // Distribution npm-install classique : on spawn le fichier compilé
-    // dist/broker/index.js séparément. Binaire empaqueté (SEA) : ce fichier
-    // n'existe pas à côté de l'exécutable, on respawn donc l'exécutable
-    // lui-même avec la commande cachée "__broker", qui exécute la même
-    // logique dans le nouveau process.
-    const brokerArgs = runningAsSea() ? ['__broker'] : [path.join(__dirname, '..', 'broker', 'index.js')];
-    fs.mkdirSync(HUBLOT_HOME, { recursive: true });
-    const logFd = fs.openSync(BROKER_LOG_FILE, 'a');
-    const child = spawn(process.execPath, brokerArgs, {
-      detached: true,
-      stdio: ['ignore', logFd, logFd],
-      windowsHide: false,
-    });
-    child.unref();
+    // isBrokerRunning() (juste un ping) ne suffit pas pour decider s'il faut
+    // spawner : le serveur TCP accepte des connexions avant que le
+    // navigateur soit pret (voir broker/index.ts, variable `ready`). Si un
+    // autre "start" est deja en cours de demarrage, ne pas en spawner un
+    // deuxieme (ecraserait le meme profil Chromium) : la boucle d'attente
+    // ci-dessous suffit dans ce cas.
+    if (!(await isBrokerRunning())) {
+      // Distribution npm-install classique : on spawn le fichier compilé
+      // dist/broker/index.js séparément. Binaire empaqueté (SEA) : ce fichier
+      // n'existe pas à côté de l'exécutable, on respawn donc l'exécutable
+      // lui-même avec la commande cachée "__broker", qui exécute la même
+      // logique dans le nouveau process.
+      const brokerArgs = runningAsSea() ? ['__broker'] : [path.join(__dirname, '..', 'broker', 'index.js')];
+      fs.mkdirSync(HUBLOT_HOME, { recursive: true });
+      const logFd = fs.openSync(BROKER_LOG_FILE, 'a');
+      const child = spawn(process.execPath, brokerArgs, {
+        detached: true,
+        stdio: ['ignore', logFd, logFd],
+        windowsHide: false,
+      });
+      child.unref();
+    }
 
     const deadline = Date.now() + 15000;
     while (Date.now() < deadline) {
       await new Promise((r) => setTimeout(r, 500));
-      if (await isBrokerRunning()) {
+      if (await isBrokerReady()) {
         console.log('Broker Hublot démarré.');
         return;
       }

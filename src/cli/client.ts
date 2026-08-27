@@ -66,3 +66,16 @@ export async function isBrokerRunning(): Promise<boolean> {
     return false;
   }
 }
+
+// Distinct de isBrokerRunning() : le serveur TCP accepte des connexions des
+// qu'il ecoute, avant meme que le navigateur soit lance (voir
+// broker/index.ts, variable `ready`). Une commande qui a besoin d'un onglet
+// doit attendre ready=true, pas juste un ping qui reussit.
+export async function isBrokerReady(): Promise<boolean> {
+  try {
+    const res = await sendRequest({ cmd: 'ping' });
+    return res.ok && res.ready === true;
+  } catch {
+    return false;
+  }
+}

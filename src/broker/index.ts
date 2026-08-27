@@ -21,6 +21,15 @@ const MAX_CONSOLE_ENTRIES = 500;
 // process sans limite (DoS memoire trivial sinon).
 const MAX_LINE_BYTES = 1_048_576;
 let authToken = '';
+// Le serveur TCP se met a ecouter avant que le navigateur soit lance (voir
+// runBroker) pour pouvoir echouer vite et proprement si un broker tourne
+// deja (EADDRINUSE) sans d'abord gaspiller du temps a ouvrir un deuxieme
+// Chromium sur le meme profil. Consequence : un ping peut reussir alors que
+// `context` n'est pas encore pret. `ready` distingue les deux, et
+// `hublot start` (cli/index.ts) attend explicitement ready=true avant de
+// se declarer demarre, plutot que de se fier a un simple ping qui repondrait
+// trop tot.
+let ready = false;
 
 interface TabEntry {
   label: string;
@@ -155,7 +164,7 @@ async function handle(req: BrokerRequest): Promise<BrokerResponse> {
   }
   switch (req.cmd) {
     case 'ping':
-      return { ok: true, message: 'pong' };
+      return { ok: true, message: 'pong', ready };
 
     case 'status': {
       const list: TabInfo[] = [...tabs.values()].map((t) => ({ label: t.label, tabId: t.tabId, url: safeUrl(t.page) }));
@@ -320,6 +329,7 @@ export async function runBroker(): Promise<void> {
   await keepAlive.goto('about:blank').catch(() => undefined);
 
   await restorePersistedTabs(context);
+  ready = true;
 
   context.on('close', () => shutdown(0));
   process.on('SIGINT', () => shutdown(0));

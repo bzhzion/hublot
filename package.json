@@ -15,15 +15,15 @@
     "test": "npm run build && node --test"
   },
   "dependencies": {
-    "commander": "^12.1.0",
+    "commander": "^15.0.0",
     "playwright-core": "^1.47.0"
   },
   "devDependencies": {
-    "@types/node": "^20.14.0",
+    "@types/node": "^26.4.0",
     "esbuild": "^0.28.2",
     "postject": "^1.0.0-alpha.6",
     "sharp": "^0.35.4",
-    "typescript": "^5.5.0"
+    "typescript": "^5.9.3"
   },
   "engines": {
     "node": ">=18"

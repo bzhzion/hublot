@@ -31,5 +31,5 @@ export type BrokerCommand =
 export type BrokerRequest = BrokerCommand & { token: string };
 
 export type BrokerResponse =
-  | { ok: true; tabs?: TabInfo[]; text?: string; path?: string; logs?: ConsoleLogEntry[]; message?: string }
+  | { ok: true; tabs?: TabInfo[]; text?: string; path?: string; logs?: ConsoleLogEntry[]; message?: string; ready?: boolean }
   | { ok: false; error: string };
