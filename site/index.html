@@ -197,8 +197,9 @@
     </div>
     <div class="panel-body">
       <p class="lede-small">
-        Start the broker once, then open one tab per agent and drive it: navigate, click,
-        type, read, capture.
+        Start the broker once, then open one tab per agent and drive it: navigate, click, type,
+        hover, drag, upload, wait for content, read the accessibility tree, run raw JavaScript,
+        capture. 24 commands, tested against a real Chromium tab, not just compiled.
       </p>
 
       <ol class="transmission-log">
@@ -233,53 +234,156 @@
         <li>
           <span class="tx-id">05</span>
           <div class="tx-body">
-            <p class="tx-label">Click an element (Playwright CSS selector)</p>
-            <pre><code>hublot click --label claude-main --selector "button.submit"</code></pre>
+            <p class="tx-label">Go back to the previous page</p>
+            <pre><code>hublot back --label claude-main</code></pre>
           </div>
         </li>
         <li>
           <span class="tx-id">06</span>
           <div class="tx-body">
-            <p class="tx-label">Type into a field</p>
-            <pre><code>hublot type --label claude-main --selector "input[name=q]" --text "search"</code></pre>
+            <p class="tx-label">Click an element (Playwright CSS selector)</p>
+            <pre><code>hublot click --label claude-main --selector "button.submit"</code></pre>
           </div>
         </li>
         <li>
           <span class="tx-id">07</span>
+          <div class="tx-body">
+            <p class="tx-label">Hover an element (e.g. to reveal a menu)</p>
+            <pre><code>hublot hover --label claude-main --selector "nav .menu-trigger"</code></pre>
+          </div>
+        </li>
+        <li>
+          <span class="tx-id">08</span>
+          <div class="tx-body">
+            <p class="tx-label">Type into a field (replaces the value outright, no fake keystrokes)</p>
+            <pre><code>hublot type --label claude-main --selector "input[name=q]" --text "search"</code></pre>
+          </div>
+        </li>
+        <li>
+          <span class="tx-id">09</span>
+          <div class="tx-body">
+            <p class="tx-label">Press a key, on an element or globally</p>
+            <pre><code>hublot press --label claude-main --selector "input[name=q]" --key Enter</code></pre>
+          </div>
+        </li>
+        <li>
+          <span class="tx-id">10</span>
+          <div class="tx-body">
+            <p class="tx-label">Pick an option in a dropdown</p>
+            <pre><code>hublot select --label claude-main --selector "#country" --value FR</code></pre>
+          </div>
+        </li>
+        <li>
+          <span class="tx-id">11</span>
+          <div class="tx-body">
+            <p class="tx-label">Drag one element onto another</p>
+            <pre><code>hublot drag --label claude-main --source "#card-1" --target "#column-2"</code></pre>
+          </div>
+        </li>
+        <li>
+          <span class="tx-id">12</span>
+          <div class="tx-body">
+            <p class="tx-label">Send a file into an <code>&lt;input type=file&gt;</code></p>
+            <pre><code>hublot upload --label claude-main --selector "input[type=file]" --files "C:\path\file.pdf"</code></pre>
+          </div>
+        </li>
+        <li>
+          <span class="tx-id">13</span>
+          <div class="tx-body">
+            <p class="tx-label">Decide how this tab answers JS dialogs (default: dismiss)</p>
+            <pre><code>hublot dialog --label claude-main --action accept</code></pre>
+          </div>
+        </li>
+        <li>
+          <span class="tx-id">14</span>
+          <div class="tx-body">
+            <p class="tx-label">Wait for an element or a piece of text to show up</p>
+            <pre><code>hublot wait --label claude-main --text "Loading complete"</code></pre>
+          </div>
+        </li>
+        <li>
+          <span class="tx-id">15</span>
+          <div class="tx-body">
+            <p class="tx-label">Find elements containing a text, without guessing a CSS selector</p>
+            <pre><code>hublot find --label claude-main --text "Add to cart"</code></pre>
+          </div>
+        </li>
+        <li>
+          <span class="tx-id">16</span>
+          <div class="tx-body">
+            <p class="tx-label">Run a JS expression inside the page's own sandbox and print the result (JSON)</p>
+            <pre><code>hublot evaluate --label claude-main --expression "document.title"</code></pre>
+          </div>
+        </li>
+        <li>
+          <span class="tx-id">17</span>
+          <div class="tx-body">
+            <p class="tx-label">Resize this tab's viewport</p>
+            <pre><code>hublot resize --label claude-main --width 1280 --height 800</code></pre>
+          </div>
+        </li>
+        <li>
+          <span class="tx-id">18</span>
           <div class="tx-body">
             <p class="tx-label">Extract text (innerText) from an element, or the whole page if <code>--selector</code> is omitted</p>
             <pre><code>hublot extract --label claude-main --selector ".result"</code></pre>
           </div>
         </li>
         <li>
-          <span class="tx-id">08</span>
+          <span class="tx-id">19</span>
+          <div class="tx-body">
+            <p class="tx-label">Accessibility tree (roles/names) — more reliable than a screenshot for an agent to locate something</p>
+            <pre><code>hublot snapshot --label claude-main</code></pre>
+          </div>
+        </li>
+        <li>
+          <span class="tx-id">20</span>
           <div class="tx-body">
             <p class="tx-label">Take a screenshot: a timestamped PNG is written to disk, its path printed to stdout</p>
             <pre><code>hublot screenshot --label claude-main</code></pre>
           </div>
         </li>
         <li>
-          <span class="tx-id">09</span>
+          <span class="tx-id">21</span>
           <div class="tx-body">
             <p class="tx-label">Read the JS console log captured since the tab was opened (capped at 500 entries)</p>
             <pre><code>hublot console --label claude-main</code></pre>
           </div>
         </li>
         <li>
-          <span class="tx-id">10</span>
+          <span class="tx-id">22</span>
+          <div class="tx-body">
+            <p class="tx-label">Read the network requests captured since the tab was opened (method, status, URL)</p>
+            <pre><code>hublot network --label claude-main</code></pre>
+          </div>
+        </li>
+        <li>
+          <span class="tx-id">23</span>
           <div class="tx-body">
             <p class="tx-label">Close this tab (the browser itself stays open)</p>
             <pre><code>hublot close --label claude-main</code></pre>
           </div>
         </li>
         <li>
-          <span class="tx-id">11</span>
+          <span class="tx-id">24</span>
           <div class="tx-body">
             <p class="tx-label">Stop the broker entirely and close the browser</p>
             <pre><code>hublot stop</code></pre>
           </div>
         </li>
       </ol>
+
+      <div class="readout readout--error">
+        <p class="readout-line">
+          <span class="readout-prompt">⚠</span>
+          <code>hublot run-code-unsafe --label claude-main --code "async (page) =&gt; page.title()"</code>
+        </p>
+        <p class="readout-line readout-line--fault">
+          Runs Playwright/Node code inside the broker process itself — full filesystem and
+          process access, not just the page's JS sandbox like <code>evaluate</code>.
+        </p>
+        <p class="readout-line readout-line--fault">OPT-IN · PERSONAL, TRUSTED MACHINES ONLY</p>
+      </div>
 
       <p class="axiom">
         <span class="axiom-tag">MULTI-AGENT CONVENTION</span>
