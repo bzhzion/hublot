@@ -113,14 +113,53 @@ hublot open --label claude-main --url "https://example.com"
 # Navigue dans l'onglet du label
 hublot navigate --label claude-main --url "https://example.com/page2"
 
+# Revient a la page precedente
+hublot back --label claude-main
+
 # Clique sur un élément (sélecteur CSS Playwright)
 hublot click --label claude-main --selector "button.submit"
+
+# Survole un élément (hover, ex: pour faire apparaitre un menu)
+hublot hover --label claude-main --selector "nav .menu-trigger"
 
 # Saisit du texte dans un champ
 hublot type --label claude-main --selector "input[name=q]" --text "recherche"
 
+# Presse une touche (Enter, Tab, Escape...), sur un élément ou globalement
+hublot press --label claude-main --selector "input[name=q]" --key Enter
+
+# Sélectionne une option dans un <select>
+hublot select --label claude-main --selector "#pays" --value "FR"
+
+# Glisse-dépose un élément vers un autre
+hublot drag --label claude-main --source "#carte-1" --target "#colonne-2"
+
+# Envoie un fichier dans un <input type=file>
+hublot upload --label claude-main --selector "input[type=file]" --files "C:\chemin\fichier.pdf"
+
+# Definit comment cet onglet repond aux dialogues JS (alert/confirm/prompt).
+# Par defaut : dismiss (comportement natif Playwright sans ecouteur explicite).
+hublot dialog --label claude-main --action accept
+
+# Attend explicitement l'apparition d'un élément ou d'un texte
+hublot wait --label claude-main --text "Chargement termine"
+hublot wait --label claude-main --selector ".result" --timeout-ms 10000
+
+# Trouve les éléments contenant un texte, sans deviner un sélecteur CSS
+hublot find --label claude-main --text "Ajouter au panier"
+
+# Exécute du JavaScript arbitraire dans la page et affiche le résultat (JSON)
+hublot evaluate --label claude-main --expression "document.title"
+
+# Redimensionne le viewport de cet onglet
+hublot resize --label claude-main --width 1280 --height 800
+
 # Extrait le texte (innerText) d'un élément, ou de tout le body si --selector omis
 hublot extract --label claude-main --selector ".result"
+
+# Arbre d'accessibilité de la page (rôles/noms) : plus fiable qu'un
+# screenshot pour qu'un agent repère un élément sans deviner un sélecteur
+hublot snapshot --label claude-main
 
 # Capture d'écran : écrit un PNG horodaté et affiche son chemin absolu
 hublot screenshot --label claude-main
@@ -128,12 +167,28 @@ hublot screenshot --label claude-main
 # Derniers logs console JS capturés depuis l'ouverture de l'onglet (borné à 500 entrées)
 hublot console --label claude-main
 
+# Dernières requêtes réseau capturées (méthode, statut, URL — borné à 500 entrées)
+hublot network --label claude-main
+
 # Ferme l'onglet de ce label (le navigateur, lui, reste ouvert)
 hublot close --label claude-main
 
 # Arrête complètement le broker et ferme le navigateur
 hublot stop
 ```
+
+Toutes ces commandes ont été testées en conditions réelles (pas juste compilées) sur une page
+locale : `select`/`hover`/`press`/`drag`/`upload`/`dialog`/`wait`/`find`/`evaluate`/`back`/
+`resize`/`network`/`snapshot` produisent bien l'effet attendu sur un vrai Chromium.
+
+### Ce qui manque encore par rapport à Playwright MCP
+
+Volontairement pas repris : `browser_run_code_unsafe` (capacité déjà couverte par `evaluate`,
+un deuxième canal d'exécution de code ne ferait qu'ajouter de la surface sans nouvelle
+capacité) et le remplissage groupé multi-champs (`browser_fill_form` — `type`/`select` un par
+un couvrent le même besoin, juste sans le batching). `browser_tabs` n'a pas d'équivalent direct
+non plus : le modèle de Hublot (un onglet = un `--label` choisi par l'appelant) remplace déjà le
+besoin de lister/nommer les onglets dynamiquement.
 
 ### Convention d'usage multi-agents
 

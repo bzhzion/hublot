@@ -173,6 +173,16 @@ program
   });
 
 program
+  .command('back')
+  .requiredOption('--label <label>', 'label de l\'onglet')
+  .description('Revient a la page precedente dans l\'historique de l\'onglet')
+  .action(async (opts) => {
+    requireValidLabel(opts.label);
+    const res = await callBroker({ cmd: 'back', label: opts.label });
+    printResultAndExit(res);
+  });
+
+program
   .command('click')
   .requiredOption('--label <label>', 'label de l\'onglet')
   .requiredOption('--selector <selector>', 'sélecteur CSS Playwright')
@@ -184,14 +194,152 @@ program
   });
 
 program
+  .command('hover')
+  .requiredOption('--label <label>', 'label de l\'onglet')
+  .requiredOption('--selector <selector>', 'sélecteur CSS Playwright')
+  .description('Survole un élément (hover)')
+  .action(async (opts) => {
+    requireValidLabel(opts.label);
+    const res = await callBroker({ cmd: 'hover', label: opts.label, selector: opts.selector });
+    printResultAndExit(res);
+  });
+
+program
   .command('type')
   .requiredOption('--label <label>', 'label de l\'onglet')
   .requiredOption('--selector <selector>', 'sélecteur CSS Playwright')
   .requiredOption('--text <text>', 'texte à saisir')
-  .description('Saisit du texte dans un champ')
+  .description('Saisit du texte dans un champ (remplace la valeur, ne simule pas de vraies frappes clavier)')
   .action(async (opts) => {
     requireValidLabel(opts.label);
     const res = await callBroker({ cmd: 'type', label: opts.label, selector: opts.selector, text: opts.text });
+    printResultAndExit(res);
+  });
+
+program
+  .command('press')
+  .requiredOption('--label <label>', 'label de l\'onglet')
+  .option('--selector <selector>', 'sélecteur CSS Playwright (sinon l\'élément actuellement focus)')
+  .requiredOption('--key <key>', 'touche a presser, ex: Enter, Tab, Escape, ArrowDown')
+  .description('Presse une touche clavier, sur un élément ou globalement')
+  .action(async (opts) => {
+    requireValidLabel(opts.label);
+    const res = await callBroker({ cmd: 'press', label: opts.label, selector: opts.selector, key: opts.key });
+    printResultAndExit(res);
+  });
+
+program
+  .command('select')
+  .requiredOption('--label <label>', 'label de l\'onglet')
+  .requiredOption('--selector <selector>', 'sélecteur CSS Playwright (élément <select>)')
+  .requiredOption('--value <value>', 'valeur de l\'option a sélectionner')
+  .description('Sélectionne une option dans un menu déroulant')
+  .action(async (opts) => {
+    requireValidLabel(opts.label);
+    const res = await callBroker({ cmd: 'select', label: opts.label, selector: opts.selector, value: opts.value });
+    printResultAndExit(res);
+  });
+
+program
+  .command('drag')
+  .requiredOption('--label <label>', 'label de l\'onglet')
+  .requiredOption('--source <selector>', 'sélecteur CSS de l\'élément a glisser')
+  .requiredOption('--target <selector>', 'sélecteur CSS de la cible du dépôt')
+  .description('Glisse-dépose un élément vers un autre (drag and drop)')
+  .action(async (opts) => {
+    requireValidLabel(opts.label);
+    const res = await callBroker({ cmd: 'drag', label: opts.label, source: opts.source, target: opts.target });
+    printResultAndExit(res);
+  });
+
+program
+  .command('upload')
+  .requiredOption('--label <label>', 'label de l\'onglet')
+  .requiredOption('--selector <selector>', 'sélecteur CSS de l\'input file')
+  .requiredOption('--files <files>', 'chemin(s) de fichier, separes par des virgules')
+  .description('Envoie un ou plusieurs fichiers dans un champ <input type=file>')
+  .action(async (opts) => {
+    requireValidLabel(opts.label);
+    const res = await callBroker({ cmd: 'upload', label: opts.label, selector: opts.selector, files: opts.files });
+    printResultAndExit(res);
+  });
+
+program
+  .command('dialog')
+  .requiredOption('--label <label>', 'label de l\'onglet')
+  .requiredOption('--action <action>', 'accept ou dismiss')
+  .option('--text <text>', 'texte a renvoyer si le dialogue est un prompt() accepte')
+  .description('Definit comment cet onglet doit repondre aux dialogues JS (alert/confirm/prompt). Par defaut : dismiss.')
+  .action(async (opts) => {
+    requireValidLabel(opts.label);
+    if (opts.action !== 'accept' && opts.action !== 'dismiss') {
+      console.error('--action doit valoir "accept" ou "dismiss".');
+      process.exit(1);
+    }
+    const res = await callBroker({ cmd: 'dialog', label: opts.label, action: opts.action, text: opts.text });
+    if (!res.ok) return printResultAndExit(res);
+    console.log(res.message ?? 'ok');
+  });
+
+program
+  .command('wait')
+  .requiredOption('--label <label>', 'label de l\'onglet')
+  .option('--selector <selector>', 'attend que cet élément soit visible')
+  .option('--text <text>', 'attend que ce texte apparaisse sur la page')
+  .option('--timeout-ms <ms>', 'délai maximum en millisecondes (defaut: 30000)')
+  .description('Attend explicitement l\'apparition d\'un élément ou d\'un texte')
+  .action(async (opts) => {
+    requireValidLabel(opts.label);
+    if (!opts.selector && !opts.text) {
+      console.error('Fournir --selector ou --text.');
+      process.exit(1);
+    }
+    const res = await callBroker({
+      cmd: 'wait',
+      label: opts.label,
+      selector: opts.selector,
+      text: opts.text,
+      timeoutMs: opts.timeoutMs ? Number(opts.timeoutMs) : undefined,
+    });
+    printResultAndExit(res);
+  });
+
+program
+  .command('find')
+  .requiredOption('--label <label>', 'label de l\'onglet')
+  .requiredOption('--text <text>', 'texte a rechercher (correspondance partielle)')
+  .description('Trouve les éléments contenant ce texte, sans avoir a deviner un sélecteur CSS')
+  .action(async (opts) => {
+    requireValidLabel(opts.label);
+    const res = await callBroker({ cmd: 'find', label: opts.label, text: opts.text });
+    if (!res.ok) return printResultAndExit(res);
+    for (const m of res.matches ?? []) {
+      console.log(`<${m.tag}> ${m.text}`);
+    }
+    if (!res.matches || res.matches.length === 0) console.log('Aucun élément trouvé.');
+  });
+
+program
+  .command('evaluate')
+  .requiredOption('--label <label>', 'label de l\'onglet')
+  .requiredOption('--expression <expression>', 'expression JavaScript a évaluer dans la page')
+  .description('Exécute une expression JavaScript arbitraire dans le contexte de la page et affiche le résultat (JSON)')
+  .action(async (opts) => {
+    requireValidLabel(opts.label);
+    const res = await callBroker({ cmd: 'evaluate', label: opts.label, expression: opts.expression });
+    if (!res.ok) return printResultAndExit(res);
+    console.log(res.result ?? '');
+  });
+
+program
+  .command('resize')
+  .requiredOption('--label <label>', 'label de l\'onglet')
+  .requiredOption('--width <width>', 'largeur en pixels')
+  .requiredOption('--height <height>', 'hauteur en pixels')
+  .description('Redimensionne le viewport de cet onglet')
+  .action(async (opts) => {
+    requireValidLabel(opts.label);
+    const res = await callBroker({ cmd: 'resize', label: opts.label, width: Number(opts.width), height: Number(opts.height) });
     printResultAndExit(res);
   });
 
@@ -203,6 +351,17 @@ program
   .action(async (opts) => {
     requireValidLabel(opts.label);
     const res = await callBroker({ cmd: 'extract', label: opts.label, selector: opts.selector });
+    if (!res.ok) return printResultAndExit(res);
+    console.log(res.text ?? '');
+  });
+
+program
+  .command('snapshot')
+  .requiredOption('--label <label>', 'label de l\'onglet')
+  .description('Arbre d\'accessibilité de la page (rôles/noms), plus fiable qu\'un screenshot pour repérer un élément sans deviner un sélecteur')
+  .action(async (opts) => {
+    requireValidLabel(opts.label);
+    const res = await callBroker({ cmd: 'snapshot', label: opts.label });
     if (!res.ok) return printResultAndExit(res);
     console.log(res.text ?? '');
   });
@@ -228,6 +387,19 @@ program
     if (!res.ok) return printResultAndExit(res);
     for (const log of res.logs ?? []) {
       console.log(`[${new Date(log.timestamp).toISOString()}] ${log.type}: ${log.text}`);
+    }
+  });
+
+program
+  .command('network')
+  .requiredOption('--label <label>', 'label de l\'onglet')
+  .description('Affiche les requêtes réseau capturées pour cet onglet (méthode, URL, statut)')
+  .action(async (opts) => {
+    requireValidLabel(opts.label);
+    const res = await callBroker({ cmd: 'network', label: opts.label });
+    if (!res.ok) return printResultAndExit(res);
+    for (const r of res.requests ?? []) {
+      console.log(`${r.method}\t${r.status ?? '?'}\t${r.url}`);
     }
   });
 

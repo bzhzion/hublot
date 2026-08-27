@@ -8,13 +8,15 @@
 import * as fs from 'fs';
 import * as net from 'net';
 import * as path from 'path';
-import { chromium, BrowserContext, Page, ConsoleMessage } from './playwrightCore.js';
+import { chromium, BrowserContext, Page, ConsoleMessage, Dialog, Request } from './playwrightCore.js';
 import { BROKER_HOST, BROKER_PORT, PROFILE_DIR, TABS_FILE, TOKEN_FILE, screenshotsDir, HUBLOT_HOME } from '../shared/paths.js';
-import { BrokerRequest, BrokerResponse, ConsoleLogEntry, TabInfo } from '../shared/types.js';
+import { BrokerRequest, BrokerResponse, ConsoleLogEntry, FindMatch, NetworkLogEntry, TabInfo } from '../shared/types.js';
 import { ensureAuthToken, isAuthorized } from './auth.js';
 import { isValidLabel } from '../shared/validate.js';
 
 const MAX_CONSOLE_ENTRIES = 500;
+const MAX_NETWORK_ENTRIES = 500;
+const MAX_FIND_MATCHES = 20;
 // Une requete legitime (label/selector/texte/URL) ne depasse jamais quelques
 // Ko ; ce plafond n'existe que pour qu'un client (bugue ou non authentifie)
 // qui n'envoie jamais de saut de ligne ne fasse pas grossir le buffer du
@@ -36,6 +38,12 @@ interface TabEntry {
   tabId: string;
   page: Page;
   consoleLogs: ConsoleLogEntry[];
+  networkLog: NetworkLogEntry[];
+  // Par defaut Playwright rejette (dismiss) tout dialogue JS (alert/confirm/
+  // prompt) qui n'a pas d'ecouteur explicite - sans quoi une page qui ouvre
+  // un dialogue bloquerait indefiniment (aucun humain pour cliquer OK).
+  // "dialog" permet a un agent de choisir la politique pour cet onglet.
+  dialogPolicy: { action: 'accept' | 'dismiss'; text?: string };
 }
 
 const tabs = new Map<string, TabEntry>();
@@ -73,11 +81,28 @@ function safeUrl(page: Page): string {
   }
 }
 
-function attachConsoleCapture(entry: TabEntry): void {
+function attachPageListeners(entry: TabEntry): void {
   entry.page.on('console', (msg: ConsoleMessage) => {
     entry.consoleLogs.push({ type: msg.type(), text: msg.text(), timestamp: Date.now() });
     if (entry.consoleLogs.length > MAX_CONSOLE_ENTRIES) {
       entry.consoleLogs.splice(0, entry.consoleLogs.length - MAX_CONSOLE_ENTRIES);
+    }
+  });
+  entry.page.on('requestfinished', (req: Request) => {
+    void req.response().then((res) => {
+      entry.networkLog.push({ method: req.method(), url: req.url(), status: res?.status() ?? null, timestamp: Date.now() });
+      if (entry.networkLog.length > MAX_NETWORK_ENTRIES) {
+        entry.networkLog.splice(0, entry.networkLog.length - MAX_NETWORK_ENTRIES);
+      }
+    });
+  });
+  entry.page.on('dialog', (dialog: Dialog) => {
+    entry.consoleLogs.push({ type: `dialog:${dialog.type()}`, text: dialog.message(), timestamp: Date.now() });
+    const policy = entry.dialogPolicy;
+    if (policy.action === 'accept') {
+      void dialog.accept(policy.text);
+    } else {
+      void dialog.dismiss();
     }
   });
   entry.page.on('close', () => {
@@ -125,8 +150,8 @@ async function restorePersistedTabs(ctx: BrowserContext): Promise<void> {
   for (const info of previous) {
     try {
       const page = await ctx.newPage();
-      const entry: TabEntry = { label: info.label, tabId: info.tabId, page, consoleLogs: [] };
-      attachConsoleCapture(entry);
+      const entry: TabEntry = { label: info.label, tabId: info.tabId, page, consoleLogs: [], networkLog: [], dialogPolicy: { action: 'dismiss' } };
+      attachPageListeners(entry);
       tabs.set(info.label, entry);
       if (info.url) {
         await page.goto(info.url, { waitUntil: 'domcontentloaded' }).catch(() => undefined);
@@ -145,8 +170,8 @@ async function getOrCreateTab(label: string): Promise<TabEntry> {
   if (existing) return existing;
   if (!context) throw new Error('contexte navigateur non initialisé');
   const page = await context.newPage();
-  const entry: TabEntry = { label, tabId: nextTabId(), page, consoleLogs: [] };
-  attachConsoleCapture(entry);
+  const entry: TabEntry = { label, tabId: nextTabId(), page, consoleLogs: [], networkLog: [], dialogPolicy: { action: 'dismiss' } };
+  attachPageListeners(entry);
   tabs.set(label, entry);
   persistTabs();
   return entry;
@@ -189,9 +214,22 @@ async function handle(req: BrokerRequest): Promise<BrokerResponse> {
       return { ok: true };
     }
 
+    case 'back': {
+      const entry = requireTab(req.label);
+      await entry.page.goBack({ waitUntil: 'domcontentloaded' });
+      persistTabs();
+      return { ok: true };
+    }
+
     case 'click': {
       const entry = requireTab(req.label);
       await entry.page.click(req.selector);
+      return { ok: true };
+    }
+
+    case 'hover': {
+      const entry = requireTab(req.label);
+      await entry.page.locator(req.selector).hover();
       return { ok: true };
     }
 
@@ -201,12 +239,96 @@ async function handle(req: BrokerRequest): Promise<BrokerResponse> {
       return { ok: true };
     }
 
+    case 'press': {
+      const entry = requireTab(req.label);
+      if (req.selector) {
+        await entry.page.locator(req.selector).press(req.key);
+      } else {
+        await entry.page.keyboard.press(req.key);
+      }
+      return { ok: true };
+    }
+
+    case 'select': {
+      const entry = requireTab(req.label);
+      await entry.page.locator(req.selector).selectOption(req.value);
+      return { ok: true };
+    }
+
+    case 'drag': {
+      const entry = requireTab(req.label);
+      await entry.page.locator(req.source).dragTo(entry.page.locator(req.target));
+      return { ok: true };
+    }
+
+    case 'upload': {
+      const entry = requireTab(req.label);
+      await entry.page.locator(req.selector).setInputFiles(req.files.split(',').map((f) => f.trim()));
+      return { ok: true };
+    }
+
+    case 'dialog': {
+      const entry = requireTab(req.label);
+      entry.dialogPolicy = { action: req.action, text: req.text };
+      return { ok: true, message: `politique de dialogue pour cet onglet : ${req.action}` };
+    }
+
+    case 'wait': {
+      const entry = requireTab(req.label);
+      const timeout = req.timeoutMs ?? 30000;
+      if (req.selector) {
+        await entry.page.locator(req.selector).waitFor({ timeout });
+      } else if (req.text) {
+        await entry.page.getByText(req.text).first().waitFor({ timeout });
+      } else {
+        throw new Error('wait necessite --selector ou --text');
+      }
+      return { ok: true };
+    }
+
+    case 'find': {
+      const entry = requireTab(req.label);
+      const locator = entry.page.getByText(req.text, { exact: false });
+      const count = Math.min(await locator.count(), MAX_FIND_MATCHES);
+      const matches: FindMatch[] = [];
+      for (let i = 0; i < count; i++) {
+        const el = locator.nth(i);
+        const tag = await el.evaluate((node: Element) => node.tagName.toLowerCase()).catch(() => '?');
+        const text = (await el.innerText().catch(() => '')).slice(0, 200);
+        matches.push({ tag, text });
+      }
+      return { ok: true, matches };
+    }
+
+    case 'evaluate': {
+      const entry = requireTab(req.label);
+      const result = await entry.page.evaluate(req.expression);
+      return { ok: true, result: result === undefined ? 'undefined' : JSON.stringify(result) };
+    }
+
+    case 'resize': {
+      const entry = requireTab(req.label);
+      await entry.page.setViewportSize({ width: req.width, height: req.height });
+      return { ok: true };
+    }
+
     case 'extract': {
       const entry = requireTab(req.label);
       const text = req.selector
         ? await entry.page.locator(req.selector).innerText()
         : await entry.page.evaluate(() => document.body.innerText);
       return { ok: true, text };
+    }
+
+    case 'snapshot': {
+      const entry = requireTab(req.label);
+      const text = await entry.page.locator('body').ariaSnapshot();
+      return { ok: true, text };
+    }
+
+    case 'network': {
+      const entry = requireTab(req.label);
+      return { ok: true, requests: entry.networkLog };
     }
 
     case 'screenshot': {
