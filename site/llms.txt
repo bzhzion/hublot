@@ -1,0 +1,21 @@
+# Hublot
+
+> One real, visible Chromium window shared by any number of AI agents, each through its own
+> tab, with a plain CLI and no MCP session to pre-configure. Open source (BZ-1.1 License), a
+> BREIZHZION project.
+
+Playwright MCP works well for a single agent, but not several at once: one agent owns the
+browser session, and an MCP server has to be declared before the agent's session even starts.
+Skipping the MCP layer for a raw Playwright script or CLI does not solve this either, since
+Playwright's own tooling is one-shot by design and nothing keeps a browser window alive between
+two separate shell commands. Hublot's broker is a small process that stays resident in the
+background, keeps the browser and its tabs alive, and answers one command at a time over a
+local socket, so any agent can call `hublot open`/`click`/`type`/`screenshot` at any moment
+without pre-wiring anything.
+
+## Documentation
+- [Site vitrine](https://hublot.breizhzion.com): présentation, architecture, commandes, installation
+- [Dépôt source](https://github.com/bzhzion/hublot): code TypeScript/Node.js, releases, issues, licence BZ-1.1
+
+## Optional
+- [Releases](https://github.com/bzhzion/hublot/releases): exécutable Windows signé (Azure Trusted Signing) et paquet Debian
