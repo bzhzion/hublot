@@ -125,6 +125,16 @@
           <code>curl</code>, callable at any moment from any agent's regular shell tool,
           with nothing to configure beforehand.
         </p>
+        <p>
+          Skipping the MCP layer and driving Playwright directly does not solve this either.
+          Playwright's own tooling (<code>codegen</code>, <code>test</code>, a one-off script)
+          is one-shot by design: it launches a browser, runs, and the process ends with it.
+          Nothing keeps a window alive <em>between</em> two separate shell commands, which is
+          exactly what letting several agents act on the same tab minutes apart requires.
+          Hublot's broker is that missing piece: a small process that stays resident, keeps the
+          browser and its tabs alive, and answers one command at a time over a local socket
+          instead of launching a fresh browser per call.
+        </p>
       </div>
       <div class="readout readout--error">
         <p class="readout-line"><span class="readout-prompt">&gt;</span> playwright_mcp.navigate("https://example.com")</p>
