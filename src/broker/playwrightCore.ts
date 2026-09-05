@@ -21,13 +21,13 @@ function isRunningAsSea(): boolean {
   }
 }
 
-function loadPlaywrightCore(): typeof import('playwright-core') {
+function loadPlaywrightCore(): typeof import('rebrowser-playwright-core') {
   if (isRunningAsSea()) {
-    return createRequire(process.execPath)('playwright-core');
+    return createRequire(process.execPath)('rebrowser-playwright-core');
   }
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  return require('playwright-core');
+  return require('rebrowser-playwright-core');
 }
 
 export const { chromium } = loadPlaywrightCore();
-export type { BrowserContext, Page, Frame, ConsoleMessage, Dialog, Request } from 'playwright-core';
+export type { BrowserContext, Page, Frame, ConsoleMessage, Dialog, Request } from 'rebrowser-playwright-core';

@@ -89,9 +89,9 @@ async function main() {
     format: 'cjs',
     target: 'node20',
     outfile: bundlePath,
-    // Voir l'explication en tete de fichier : playwright-core ne survit pas
+    // Voir l'explication en tete de fichier : rebrowser-playwright-core ne survit pas
     // au bundling (require() internes relatifs a __dirname).
-    external: ['playwright-core'],
+    external: ['rebrowser-playwright-core'],
   });
 
   const seaConfig = {
@@ -158,13 +158,13 @@ async function main() {
     machoSegmentName: process.platform === 'darwin' ? 'NODE_SEA' : undefined,
   });
 
-  console.log('[package-sea] copie de node_modules/playwright-core a cote de l\'executable ...');
+  console.log('[package-sea] copie de node_modules/rebrowser-playwright-core a cote de l\'executable ...');
   const nodeModulesOut = path.join(buildDir, 'node_modules');
   rmSync(nodeModulesOut, { recursive: true, force: true });
   mkdirSync(nodeModulesOut, { recursive: true });
   cpSync(
-    path.join(root, 'node_modules', 'playwright-core'),
-    path.join(nodeModulesOut, 'playwright-core'),
+    path.join(root, 'node_modules', 'rebrowser-playwright-core'),
+    path.join(nodeModulesOut, 'rebrowser-playwright-core'),
     { recursive: true },
   );
 
