@@ -12,6 +12,8 @@ L'historique git reste la source de vérité pour ce qui précède.
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-09-07
+
 ## [0.1.2] - 2026-09-07
 
 ### Modifié
