@@ -96,16 +96,14 @@ jobs:
           dpkg-deb --build --root-owner-group "$PKG_DIR" "$DEB_NAME"
           echo "deb_name=$DEB_NAME" >> "$GITHUB_OUTPUT"
 
-      # TODO (publication apt) : bzhzion/beammeup publie ses .deb sur
-      # apt.breizhzion.com via un workflow separe (publish-apt.yml,
-      # declenchement manuel uniquement) qui pousse le paquet a axolotl via
-      # une cle SSH dediee restreinte cote serveur par une commande forcee
-      # dans authorized_keys (limitee a un paquet nomme "beammeup", sans
-      # shell ni lecture de fichiers - voir docs/beammeup.md du repo admin).
-      # Hublot n'a pas encore cet acces SSH configure. Quand il le sera,
-      # reprendre exactement ce pattern (cle dediee + commande forcee,
-      # jamais une cle d'acces general) dans un publish-apt.yml equivalent
-      # plutot que d'improviser un chemin de publication ad hoc ici.
+      # La publication sur apt.breizhzion.com est faite par publish-apt.yml
+      # (declenchement manuel uniquement), via une cle SSH dediee restreinte cote
+      # serveur par une commande forcee limitee a un paquet nomme « hublot ».
+      #
+      # Ce bloc portait jusqu'au 2026-09-07 un TODO annoncant que cet acces
+      # n'existait pas encore. Il etait perime depuis le 2026-08-27 : le workflow
+      # existe, la cle est posee, et apt.breizhzion.com sert bien hublot. Un TODO
+      # qui survit a sa realisation se lit comme un travail restant.
 
       - name: GitHub Release
         uses: softprops/action-gh-release@v2
