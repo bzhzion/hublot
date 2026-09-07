@@ -12,6 +12,8 @@ L'historique git reste la source de vérité pour ce qui précède.
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-09-07
+
 ### Corrigé
 
 - **La publication apt est appelée par le workflow de release**, et non plus déclenchée par
