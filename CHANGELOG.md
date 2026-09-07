@@ -12,6 +12,8 @@ L'historique git reste la source de vérité pour ce qui précède.
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-09-07
+
 ### Modifié
 
 - **`publish-apt.yml` est désormais déclenché à la suite du build** (`workflow_run`), tout en
