@@ -25,10 +25,26 @@ name: Publier sur le depot APT
 # `head_branch` de l'evenement, pas dans `github.ref`.
 
 on:
-  # Declenche a la suite du build qui produit le .deb.
-  workflow_run:
-    workflows: ["Release Linux (SEA + .deb)"]
-    types: [completed]
+  # Appele explicitement par release-linux.yml, a la fin de son build.
+  #
+  # ⚠️ `workflow_run` a ete essaye d'abord et NE TIRE PAS sur ce depot. Trois tentatives,
+  # zero run declenche : depuis un tag, depuis une branche, et avec le declencheur en place
+  # depuis longtemps sur la branche par defaut. Les noms de workflow correspondaient au
+  # caractere pres, le fichier etait bien sur main, et le run amont finissait en succes.
+  # La cause n'a pas pu etre etablie de l'exterieur.
+  #
+  # `workflow_call` ne repose sur aucun evenement a observer : l'appelant nomme l'appele,
+  # donc soit le job existe dans le run, soit il n'existe pas. C'est verifiable d'un coup
+  # d'oeil, contrairement a un declenchement qui echoue en ne produisant rien.
+  #
+  # La separation demandee est conservee : fichier distinct, droits distincts, et sa cle
+  # SSH dediee reste la seule chose qui touche la production.
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version a publier'
+        required: true
+        type: string
   # Conserve pour rejouer une version precise a la main.
   workflow_dispatch:
     inputs:
@@ -44,13 +60,6 @@ jobs:
   apt:
     name: Publier le .deb sur apt.breizhzion.com
     runs-on: ubuntu-latest
-    # Un build en echec ne doit rien publier, et un build de branche n'a pas de release a
-    # laquelle se raccrocher. Les deux conditions sont necessaires : `conclusion` seul
-    # laisserait passer un push de branche, `head_branch` seul laisserait passer un echec.
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       startsWith(github.event.workflow_run.head_branch, 'v'))
     timeout-minutes: 10
 
     steps:
@@ -58,10 +67,11 @@ jobs:
         id: v
         env:
           SAISIE: ${{ inputs.version }}
-          BRANCHE: ${{ github.event.workflow_run.head_branch }}
         run: |
           set -euo pipefail
-          if [ -n "${SAISIE:-}" ]; then V="$SAISIE"; else V="${BRANCHE#v}"; fi
+          # `inputs.version` porte la version dans les DEUX cas, appel explicite comme
+          # declenchement manuel, donc il n'y a plus qu'une source a lire.
+          V="${SAISIE:-}"
           if [ -z "$V" ]; then echo "::error::version indeterminable"; exit 1; fi
           echo "Version: $V"
           echo "version=$V" >> "$GITHUB_OUTPUT"

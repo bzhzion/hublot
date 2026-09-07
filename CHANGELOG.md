@@ -12,6 +12,29 @@ L'historique git reste la source de vérité pour ce qui précède.
 
 ## [Unreleased]
 
+### Corrigé
+
+- **La publication apt est appelée par le workflow de release**, et non plus déclenchée par
+  un événement. Le fichier reste séparé, avec ses droits et sa clé SSH dédiée : seul le
+  mécanisme d'enchaînement change.
+  - ⚠️ **`workflow_run` a été essayé d'abord et ne tire pas sur ce dépôt.** Trois
+    tentatives, **zéro run déclenché** : depuis un tag, depuis une branche, et avec le
+    déclencheur en place depuis longtemps sur la branche par défaut. Les noms de workflow
+    correspondaient au caractère près, le fichier était bien sur `main` (vérifié via
+    l'API, pas seulement sur le disque), et le run amont finissait en succès. **La cause
+    n'a pas pu être établie de l'extérieur.**
+  - Deux hypothèses écartées par l'expérience plutôt que par le raisonnement : un délai
+    d'enregistrement du déclencheur, le premier tag ayant été posé 21 secondes après le
+    commit qui l'ajoutait ; et l'idée que `workflow_run` ignore les runs issus d'un tag,
+    réfutée par un lancement manuel depuis une branche qui n'a pas tiré davantage.
+  - `workflow_call` ne repose sur aucun événement à observer : l'appelant nomme l'appelé,
+    donc **soit le job existe dans le run, soit il n'existe pas**. C'est vérifiable d'un
+    coup d'œil, contrairement à un déclenchement qui échoue en ne produisant rien.
+  - `needs: build` remplace l'ancien `if` : un build en échec n'atteint jamais ce job.
+  - ⚠️ `secrets: inherit` est obligatoire, un workflow appelé ne reçoit **aucun** secret
+    sans cela. L'échec aurait été une clé SSH vide, que le contrôle préalable de l'appelé
+    nomme correctement au lieu de laisser `ssh` buter sur une clé illisible.
+
 ## [0.1.3] - 2026-09-07
 
 ## [0.1.2] - 2026-09-07

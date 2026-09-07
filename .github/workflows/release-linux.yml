@@ -38,6 +38,10 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Exposee pour le job d'appel ci-dessous : une valeur calculee dans un job n'est
+    # visible d'un autre que par un output declare.
+    outputs:
+      version: ${{ steps.version.outputs.version }}
 
     steps:
       - uses: actions/checkout@v4
@@ -111,3 +115,24 @@ jobs:
           tag_name: v${{ steps.version.outputs.version }}
           files: |
             ${{ steps.deb.outputs.deb_name }}
+
+  # ── Publication sur le depot apt, a la suite du build ───────────────────────────
+  #
+  # Un job d'appel plutot qu'un evenement `workflow_run`, qui a ete essaye et NE TIRE PAS
+  # sur ce depot : trois tentatives, zero run declenche, avec des noms correspondant au
+  # caractere pres et le fichier bien present sur la branche par defaut. Cause non
+  # etablie, donc remplacee par un mecanisme qui ne depend d'aucun evenement a observer.
+  #
+  # `needs: build` fait le garde-fou que portait l'ancien `if` : un build en echec
+  # n'atteint jamais ce job. Et le declenchement de ce workflow etant deja restreint aux
+  # tags, il n'y a pas de cas « push de branche » a ecarter.
+  #
+  # `secrets: inherit` est obligatoire : un workflow appele ne recoit AUCUN secret sans
+  # cela, et l'echec serait une cle SSH vide, que le controle prealable de l'appele
+  # nomme correctement au lieu de laisser `ssh` echouer sur une clef illisible.
+  apt:
+    needs: build
+    uses: ./.github/workflows/publish-apt.yml
+    with:
+      version: ${{ needs.build.outputs.version }}
+    secrets: inherit
