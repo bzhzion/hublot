@@ -58,6 +58,18 @@ Source: "build\node_modules\*"; DestDir: "{app}\node_modules"; Flags: ignorevers
 Name: "addtopath"; Description: "Ajouter Hublot au PATH (recommandé, pour lancer ""hublot"" depuis n'importe quel terminal)"; GroupDescription: "Options"; Flags: checkedonce
 
 [Icons]
+; ⚠️ Ce raccourci manquait, et son absence etait un vrai defaut. Cette section ne
+; contenait QUE l'entree de desinstallation ci-dessous, donc apres installation le seul
+; « programme » que le systeme connaissait de Hublot etait son desinstalleur. C'est
+; l'explication la plus plausible du `Validation-No-Executables` pose par le pipeline de
+; winget sur la PR #430896 : il enumere les points d'entree apres installation et n'en
+; trouvait aucun.
+;
+; `start` et pas l'executable nu : sans commande, `hublot` imprime son aide et rend un
+; code non nul, donc un clic aurait ouvert une console pour la refermer aussitot. `start`
+; est le premier geste documente, il est idempotent, et il ouvre le Chromium visible qui
+; est la raison d'etre de l'outil.
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Parameters: "start"; Comment: "Démarrer le navigateur partagé Hublot"
 Name: "{group}\Désinstaller {#MyAppName}"; Filename: "{uninstallexe}"
 
 [Code]

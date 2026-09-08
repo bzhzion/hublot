@@ -12,6 +12,25 @@ L'historique git reste la source de vérité pour ce qui précède.
 
 ## [Unreleased]
 
+### Corrigé
+
+- **L'installateur ne créait aucun raccourci vers Hublot, seulement vers son
+  désinstalleur.** Sa section `[Icons]` ne contenait que l'entrée de désinstallation, et il
+  n'y avait aucune section `[Run]`, donc après installation le seul « programme » que le
+  système connaissait de Hublot était `unins000.exe`.
+  - **C'est l'explication la plus plausible du `Validation-No-Executables`** posé par le
+    pipeline de validation de winget sur la PR
+    [#430896](https://github.com/microsoft/winget-pkgs/pull/430896) : il énumère les points
+    d'entrée après installation et n'en trouvait aucun. Trouvé en comparant avec les deux
+    paquets du parc qui passent la validation, dont les installateurs en créent un.
+  - Le raccourci lance `hublot start` et pas l'exécutable nu : sans commande, `hublot`
+    imprime son aide et rend un code non nul, donc un clic aurait ouvert une console pour
+    la refermer aussitôt. `start` est le premier geste documenté, il est idempotent, et il
+    ouvre le Chromium visible qui est la raison d'être de l'outil.
+  - ⚠️ **Le correctif ne débloque pas la PR à lui seul** : elle référence l'installateur de
+    la 0.1.1, qui porte le défaut. Il faut une release qui embarque ce correctif, puis
+    mettre le manifest à jour vers cette version.
+
 ## [0.1.4] - 2026-09-07
 
 ### Corrigé
