@@ -12,6 +12,34 @@ L'historique git reste la source de vérité pour ce qui précède.
 
 ## [Unreleased]
 
+### Corrigé
+
+- **Mettre à jour Hublot pendant que le broker tourne échouait, en silence.** L'installateur
+  sortait en **code 5** et ne changeait rien, ce qui se lit comme un installateur cassé.
+  Important au-delà de l'installation manuelle : c'est exactement ce que fera
+  `winget upgrade` une fois le paquet publié.
+  - Mesuré et non déduit, journal `/LOG` de l'installateur à l'appui : Restart Manager
+    trouvait bien le broker et lui demandait de s'arrêter, puis
+    `Defaulting to Abort for suppressed message box (Abort/Retry/Ignore)`.
+  - **Rien ne manquait dans le script** : `CloseApplications` vaut `yes` par défaut dans
+    Inno 6, et en mode silencieux il ferme et relance les applications concernées. Mais
+    `yes` demande une fermeture **propre**, et un processus Node qui tient un serveur
+    ouvert ne s'arrête pas sur cette demande. Le fichier restait verrouillé.
+  - Corrigé par `CloseApplications=force`. Prouvé dans les deux sens : code 5 avec le
+    broker en marche avant, code 0 après, le journal disant `Shutting down applications
+    using our files. (forced)` et le broker effectivement fermé.
+  - ⚠️ **Trois hypothèses fausses avant la bonne, et le discriminant n'est aucune des
+    trois.** Ce n'est pas le type d'application (Restart Manager classe le broker Hublot et
+    le `noisecrypt gui` **à l'identique**, type console, `bRestartable=False`), ce n'est pas
+    Chromium (il ne tient aucun fichier du répertoire d'installation, vérifié par une
+    requête Restart Manager en lecture seule), et ce n'est pas une directive absente. Le
+    seul facteur est que **le processus coopère ou non** quand on lui demande de s'arrêter :
+    le binaire Go de NoiseCrypt se termine, ce Node non.
+  - Corollaire à ne pas généraliser : `force` est le bon choix pour un broker de
+    navigateur, dont les sessions sont perdues de toute façon par une mise à jour. Il
+    serait **mauvais** pour une application portant du travail non enregistré, ce que la
+    documentation d'Inno signale explicitement. La décision se prend par application.
+
 ## [0.1.5] - 2026-09-08
 
 ### Corrigé

@@ -43,6 +43,32 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 UninstallDisplayIcon={app}\{#MyAppExeName}
 MinVersion=10.0
+; ⚠️ `force` et pas la valeur par defaut `yes`, et le detail compte : une mise a jour
+; pendant que le broker tourne ECHOUAIT, en code 5, silencieusement.
+;
+; Mesure et non deduction, journal `/LOG` de l'installateur a l'appui :
+;   RestartManager found an application using one of our files: Hublot
+;   Shutting down applications using our files.
+;   Defaulting to Abort for suppressed message box (Abort/Retry/Ignore):
+;   User canceled the installation process.
+;
+; `CloseApplications` vaut deja `yes` par defaut, donc rien ne manquait : Restart Manager
+; trouvait bien le broker et lui demandait de s'arreter. Mais `yes` demande une fermeture
+; PROPRE, et un processus Node qui tient un serveur ouvert ne s'arrete pas sur cette
+; demande. Le fichier restait verrouille, Inno tombait sur une boite
+; Abandonner/Reessayer/Ignorer, et `/SUPPRESSMSGBOXES` y repond Abandonner. D'ou un echec
+; qui se lit comme un installateur casse.
+;
+; Le meme test sur NoiseCrypt passe en code 0 : son binaire Go se termine quand on le lui
+; demande. Le discriminant n'est donc ni le type d'application (Restart Manager classe les
+; deux en console, non redemarrables) ni Chromium, qui ne tient aucun fichier du
+; repertoire d'installation. C'est uniquement que le processus coopere ou non.
+;
+; Le risque du mode `force`, que la documentation d'Inno signale, est la perte de travail
+; non enregistre. Ici le processus force est un broker de navigateur : ses sessions sont
+; perdues de toute facon par une mise a jour, et une mise a jour qui echoue en silence est
+; pire qu'une session fermee.
+CloseApplications=force
 
 [Languages]
 Name: "french";  MessagesFile: "compiler:Languages\French.isl"
