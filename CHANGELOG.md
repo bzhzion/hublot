@@ -12,6 +12,8 @@ L'historique git reste la source de vérité pour ce qui précède.
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-09-08
+
 ### Corrigé
 
 - **L'installateur ne créait aucun raccourci vers Hublot, seulement vers son
