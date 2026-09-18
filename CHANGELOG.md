@@ -12,6 +12,8 @@ L'historique git reste la source de vérité pour ce qui précède.
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-09-18
+
 ### Ajouté
 
 - **Le titre de chaque page est préfixé par `◉ Hublot — `**, pour qu'on ne confonde plus
