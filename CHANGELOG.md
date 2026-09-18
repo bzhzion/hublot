@@ -12,6 +12,12 @@ L'historique git reste la source de vérité pour ce qui précède.
 
 ## [Unreleased]
 
+### Corrige
+- La **synchronisation du fork `winget-pkgs`** manquait completement a ce depot, alors
+  qu'il est calque sur `beammeup` qui l'a. Ajoutee, et **bloquante** comme partout
+  ailleurs : le fork prend du retard sur ce depot a tres fort trafic, et `wingetcreate`
+  echoue alors sur un message qui ne nomme pas la cause.
+
 ### Corrigé
 
 - **Mettre à jour Hublot pendant que le broker tourne échouait, en silence.** L'installateur
