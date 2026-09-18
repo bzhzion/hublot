@@ -13,6 +13,7 @@ import { BROKER_HOST, BROKER_PORT, PROFILE_DIR, TABS_FILE, TOKEN_FILE, REMOTE_CO
 import { BrokerRequest, BrokerResponse, ConsoleLogEntry, FindMatch, NetworkLogEntry, TabInfo } from '../shared/types.js';
 import { ensureAuthToken, isAuthorized } from './auth.js';
 import { isValidLabel } from '../shared/validate.js';
+import { TITLE_PREFIX_SCRIPT } from './branding.js';
 import { generateToken, readRemoteConfig, startRemoteWeb, stopRemoteWeb, writeRemoteConfig, RemoteConfig } from './remoteWeb.js';
 import type { Server as HttpServer } from 'http';
 
@@ -519,12 +520,21 @@ export async function runBroker(): Promise<void> {
   const server = startServer();
   context = await launchContext();
 
+  // Préfixe « ◉ Hublot — » sur le titre de chaque page. Posé sur le CONTEXTE
+  // et non page par page : il s'applique donc aussi aux onglets créés plus
+  // tard par les agents, sans qu'aucun appelant ait à y penser.
+  await context.addInitScript(TITLE_PREFIX_SCRIPT).catch(() => undefined);
+
   // Onglet technique jamais exposé aux labels : sans lui, fermer le dernier
   // onglet d'un agent (`hublot close`) ferme la fenêtre du navigateur, donc
   // le contexte, donc le broker entier. Chrome/Edge quittent quand leur
   // dernière fenêtre se ferme, comportement natif qu'on ne peut pas désactiver
   // depuis Playwright.
-  const keepAlive = await context.newPage();
+  //
+  // ⚠️ On RÉUTILISE la page que launchPersistentContext ouvre d'office plutôt
+  // que d'en créer une : en créer une deuxième laissait deux onglets vides au
+  // démarrage, donc le premier onglet d'agent arrivait en troisième position.
+  const keepAlive = context.pages()[0] ?? (await context.newPage());
   await keepAlive.goto('about:blank').catch(() => undefined);
 
   await restorePersistedTabs(context);

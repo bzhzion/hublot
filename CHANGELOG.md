@@ -12,13 +12,36 @@ L'historique git reste la source de vérité pour ce qui précède.
 
 ## [Unreleased]
 
-### Corrige
+### Ajouté
+
+- **Le titre de chaque page est préfixé par `◉ Hublot — `**, pour qu'on ne confonde plus
+  la fenêtre de Hublot avec un Chrome personnel. Le motif est un incident d'usage répété :
+  painteau fermait la fenêtre à la main, en plein travail d'un agent, faute de pouvoir la
+  reconnaître.
+  - Le titre a été choisi parce qu'il remonte **tout seul** aux quatre endroits où on
+    regarde avant de fermer une fenêtre : barre de titre, étiquette d'onglet, aperçu de
+    barre des tâches, Alt-Tab. Mesuré : la fenêtre s'intitulait `about:blank - Google
+    Chrome`, elle s'intitule `◉ Hublot - Google Chrome`.
+  - Le script est injecté sur le **contexte** et non page par page, donc les onglets créés
+    plus tard par les agents en héritent sans qu'aucun appelant ait à y penser.
+  - ⚠️ **Le contenu rendu n'est pas touché** : c'était une exigence, un bandeau dans la
+    page aurait pollué les captures d'écran des agents et leurs clics.
+  - Un `MutationObserver` sur `<head>` entier (et pas sur le seul `<title>`) réapplique le
+    préfixe, parce que beaucoup de SPA **remplacent** l'élément `<title>` au lieu d'en
+    modifier le texte.
+
+### Corrigé
+
+- **Deux onglets vides au démarrage au lieu d'un**, ce qui décalait le premier onglet d'un
+  agent en troisième position. `launchPersistentContext` ouvre déjà une page, et le broker
+  en créait une **seconde** pour son onglet technique. Il réutilise désormais la première.
+  L'onglet technique reste nécessaire : sans lui, fermer le dernier onglet d'un agent ferme
+  la fenêtre, donc le contexte, donc le broker entier.
+
 - La **synchronisation du fork `winget-pkgs`** manquait completement a ce depot, alors
   qu'il est calque sur `beammeup` qui l'a. Ajoutee, et **bloquante** comme partout
   ailleurs : le fork prend du retard sur ce depot a tres fort trafic, et `wingetcreate`
   echoue alors sur un message qui ne nomme pas la cause.
-
-### Corrigé
 
 - **Mettre à jour Hublot pendant que le broker tourne échouait, en silence.** L'installateur
   sortait en **code 5** et ne changeait rien, ce qui se lit comme un installateur cassé.
