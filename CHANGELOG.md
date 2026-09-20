@@ -12,6 +12,30 @@ L'historique git reste la source de vérité pour ce qui précède.
 
 ## [Unreleased]
 
+### Corrigé
+
+- **Le site vitrine servait des liens vers la v0.1.0 du 27 août, soit six versions de
+  retard**, et pointait sur les assets GitHub au lieu de `dl.breizhzion.com`. Un visiteur
+  repartait donc avec un binaire sans le raccourci corrigé de l'installateur et surtout
+  sans `CloseApplications=force`, c'est-à-dire dont la mise à jour suivante aurait échoué
+  en code 5.
+  - ⚠️ **Rien ne pouvait le signaler** : les vieux liens répondaient toujours `200`. Ce
+    n'était pas cassé, seulement faux — le mode de panne le plus silencieux qui soit.
+  - Le correctif n'est pas d'écrire `0.1.6` à la place : les boutons pointent désormais
+    sur le **nom fixe** `dl.breizhzion.com/hublot/Hublot-Setup-x64.exe`, que la CI écrase
+    à chaque release, comme le prescrivait déjà `docs/distribution.md`. Le bouton Linux
+    vise `releases/latest`, le `.deb` n'étant publié ni sous nom fixe ni sur R2.
+  - Le **numéro de version est lu dans `latest.json`** au chargement au lieu d'être écrit
+    en dur, et n'est affiché que s'il ressemble à un numéro de version. Les boutons ne
+    dépendent pas de ce fetch. ⚠️ Vérifié avant livraison que CORS l'autorise réellement
+    (`Access-Control-Allow-Origin: https://hublot.breizhzion.com`), sinon la fonction
+    aurait échoué en silence.
+  - `softwareVersion` retiré du JSON-LD plutôt que corrigé : mieux vaut ne rien affirmer
+    que d'affirmer faux, personne ne repassant sur un schema.org à chaque release.
+  - La mention « winget is planned but not published yet » devient « submitted and awaiting
+    review », ce qui est l'état réel (PR `microsoft/winget-pkgs` #431232, validation
+    automatique passée, revue humaine en attente).
+
 ### Décidé
 
 - **Vider `tabs.json` quand le broker s'arrête est le comportement voulu**, et non un

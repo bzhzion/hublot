@@ -103,4 +103,38 @@
   } else {
     typeNext();
   }
+
+  /* ---------------------------------------------------------------------
+   * Numéro de version, lu au chargement plutôt qu'écrit en dur
+   *
+   * ⚠️ Le motif est un défaut mesuré : ce site a servi des liens vers la
+   * v0.1.0 pendant six versions, et rien ne l'a signalé parce que les vieux
+   * liens répondaient 200. Un numéro écrit à côté du code qu'il décrit finit
+   * toujours par mentir — on le dérive.
+   *
+   * `latest.json` est écrit par la CI de release sur le même bucket que les
+   * installateurs, donc il est juste par construction. Les boutons, eux, ne
+   * dépendent PAS de ce fetch : ils pointent sur des noms fixes et marchent
+   * même si ce bloc échoue. En cas d'échec, on n'affiche simplement aucun
+   * numéro, plutôt que d'en afficher un faux.
+   * ------------------------------------------------------------------- */
+  const versionNote = document.querySelector("[data-version-note]");
+  const versionValue = document.querySelector("[data-version-value]");
+
+  if (versionNote && versionValue) {
+    fetch("https://dl.breizhzion.com/hublot/latest.json", { cache: "no-cache" })
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
+      .then((data) => {
+        const version = typeof data?.version === "string" ? data.version.trim() : "";
+        // Garde-fou : on n'injecte que ce qui ressemble à un numéro de
+        // version, pour qu'un fichier corrompu ou une page d'erreur servie
+        // en JSON ne puisse pas écrire n'importe quoi dans la page.
+        if (!/^[0-9]+(\.[0-9]+){1,3}$/.test(version)) return;
+        versionValue.textContent = version;
+        versionNote.hidden = false;
+      })
+      .catch(() => {
+        /* Silencieux et sans conséquence : la section reste masquée. */
+      });
+  }
 })();

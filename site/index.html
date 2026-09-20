@@ -37,7 +37,6 @@
       "applicationCategory": "DeveloperApplication",
       "operatingSystem": "Windows, Linux",
       "isAccessibleForFree": true,
-      "softwareVersion": "0.1.0",
       "license": "https://github.com/bzhzion/hublot/blob/main/LICENSE.md",
       "codeRepository": "https://github.com/bzhzion/hublot",
       "publisher": { "@id": "https://breizhzion.com/#organization" }
@@ -453,17 +452,23 @@
     </div>
     <div class="panel-body">
       <p class="lede-small">
-        Version 0.1.0 is out, signed on both platforms (Azure Trusted Signing). Windows gets a
+        Signed on both platforms (Azure Trusted Signing)<span class="version-note" data-version-note
+        hidden> &mdash; current release <strong data-version-value></strong></span>. Windows gets a
         proper installer (adds <code>hublot</code> to your PATH); Linux gets an in-house apt
-        repository. winget is planned but not published yet.
+        repository. A winget package has been submitted and is awaiting review.
       </p>
 
       <div class="platform-grid">
         <article class="platform-card">
           <span class="platform-code accent-teal">WINDOWS</span>
           <p>Installer (Inno Setup), signed: adds Hublot to your user PATH, ships with an uninstaller.</p>
-          <pre><code>hublot-0.1.0-x64-setup.exe</code></pre>
-          <a class="btn btn--primary" href="https://github.com/bzhzion/hublot/releases/download/v0.1.0/hublot-0.1.0-x64-setup.exe">
+          <pre><code>Hublot-Setup-x64.exe</code></pre>
+          <!-- ⚠️ Nom FIXE, jamais une URL versionnee : la CI l'ecrase a chaque release, donc
+               ce bouton n'a pas a etre remis a jour. Une URL versionnee ecrite ici a laisse le
+               site six versions en retard sans que rien ne casse (les vieux liens repondaient
+               200), et c'est exactement ce que la convention de distribution du parc prescrit
+               d'eviter. -->
+          <a class="btn btn--primary" href="https://dl.breizhzion.com/hublot/Hublot-Setup-x64.exe">
             Download for Windows
           </a>
         </article>
@@ -475,8 +480,10 @@
 echo "deb [signed-by=/usr/share/keyrings/breizhzion.asc] https://apt.breizhzion.com stable main" \
   | sudo tee /etc/apt/sources.list.d/breizhzion.list
 sudo apt update && sudo apt install hublot</code></pre>
-          <a class="btn btn--ghost" href="https://github.com/bzhzion/hublot/releases/download/v0.1.0/hublot_0.1.0_amd64.deb">
-            Or download the .deb directly
+          <!-- Pas d'URL directe : le .deb n'est publie que sur apt et sur les releases GitHub,
+               dont le nom d'asset porte la version. La page "latest" redirige toute seule. -->
+          <a class="btn btn--ghost" href="https://github.com/bzhzion/hublot/releases/latest">
+            Or grab the .deb from the latest release
           </a>
         </article>
 
