@@ -110,6 +110,17 @@ function attachPageListeners(entry: TabEntry): void {
       void dialog.dismiss();
     }
   });
+  // ⚠️ Conséquence VOULUE, arbitrée le 2026-09-20 : `hublot stop` ferme le
+  // contexte, donc déclenche cet écouteur pour chaque page, donc réécrit
+  // `tabs.json` à vide. Ce n'est pas un défaut — « stop, c'est pour tout
+  // fermer ». Ne pas le « corriger » en différant l'écriture ou en la
+  // sautant pendant l'extinction : ça ferait revenir au démarrage suivant des
+  // onglets qu'on avait explicitement demandé de fermer.
+  //
+  // `restorePersistedTabs` ne couvre donc que les arrêts NON VOULUS (plantage
+  // de Chrome, crash du broker, redémarrage machine), là où ce chemin n'a pas
+  // tourné. C'est un filet de récupération, pas une session qu'on reprend
+  // d'un jour sur l'autre.
   entry.page.on('close', () => {
     if (tabs.get(entry.label) === entry) {
       tabs.delete(entry.label);

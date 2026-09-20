@@ -12,6 +12,19 @@ L'historique git reste la source de vérité pour ce qui précède.
 
 ## [Unreleased]
 
+### Décidé
+
+- **Vider `tabs.json` quand le broker s'arrête est le comportement voulu**, et non un
+  défaut : « stop, c'est pour tout fermer ». La question s'était posée parce que
+  l'écouteur de fermeture de page réécrit le fichier à chaque page, donc à vide quand
+  `hublot stop` ferme le contexte entier. Arbitré le 2026-09-20, consigné dans
+  `src/broker/index.ts` à l'endroit exact où quelqu'un serait tenté de le « corriger »,
+  puisque différer l'écriture ferait revenir des onglets qu'on avait explicitement
+  demandé de fermer.
+  - Conséquence à connaître : `restorePersistedTabs` ne couvre que les arrêts **non
+    voulus** (plantage de Chrome, crash du broker, redémarrage machine). C'est un filet
+    de récupération, pas une session qu'on reprend d'un jour sur l'autre.
+
 ## [0.1.6] - 2026-09-18
 
 ### Ajouté
