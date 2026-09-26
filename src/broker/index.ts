@@ -140,11 +140,8 @@ async function launchContext(): Promise<BrowserContext> {
     viewport: null,
     args: [
       '--disable-blink-features=AutomationControlled',
-      // Risque accepté (usage personnel, environnement contrôlé) : réduit
-      // l'empreinte d'automatisation au prix d'un affaiblissement du bac à
-      // sable et de l'isolation d'origine.
+      // Risque accepté (usage personnel, environnement contrôlé).
       '--no-sandbox',
-      '--disable-web-security',
     ],
   };
   // Ordre de repli : Chrome système (le plus courant) -> Edge système

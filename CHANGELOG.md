@@ -76,6 +76,26 @@ L'historique git reste la source de vérité pour ce qui précède.
   patche déjà avant de builder. La description de `hublot --help` a été réécrite pour un
   lecteur humain.
 
+## [0.1.9] - 2026-09-26
+
+### Corrigé
+
+- **`--disable-web-security` retiré des arguments Chrome** : ce flag désactive l'isolation CORS
+  du navigateur, ce qui modifie le comportement de bas niveau de Chrome d'une façon
+  fingerprinta par les protections anti-bot comme Cloudflare Turnstile. Sur la même machine et
+  la même IP, le Playwright MCP standard (sans ce flag) passait Indeed sans challenge ; Hublot
+  se retrouvait en boucle de re-challenge même après un clic humain dans la fenêtre visible.
+  - Le diagnostic a été fait par exclusion : `hublot evaluate` confirmait que les signaux
+    JS-level étaient propres (`navigator.webdriver = undefined`, `navigator.plugins = 5`,
+    `navigator.languages` correctes, `window.chrome.runtime` posé). Le seul vecteur restant
+    détectable était donc dans la couche réseau/HTTP ou dans les capacités Chrome elle-mêmes.
+    `--disable-web-security` est l'argument le plus anormal du parc, et c'est lui qui tranche.
+  - `--no-sandbox` est conservé : risque accepté, usage personnel, environnement contrôlé.
+  - `rebrowser-playwright-core` couvre la couche CDP ; `src/broker/stealth.ts` couvre les
+    signaux JS-level. La surface restante après ce correctif est les empreintes réseau
+    et comportementales, non adressées volontairement (usage personnel, pas besoin de bypass
+    des systèmes anti-bot en production).
+
 ## [Unreleased]
 
 ## [0.1.6] - 2026-09-18
