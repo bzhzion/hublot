@@ -10,6 +10,18 @@ Ce fichier est créé le 2026-09-05, après la mise en service : les évolutions
 pas reconstituées, ce qui serait de la réécriture d'historique plutôt que de la documentation.
 L'historique git reste la source de vérité pour ce qui précède.
 
+## [0.1.7] - 2026-09-26
+
+### Ajouté
+
+- **Réduction de l'empreinte d'automatisation** : trois args Chrome ajoutés au lancement
+  (`--disable-blink-features=AutomationControlled`, `--no-sandbox`, `--disable-web-security`)
+  et un init script injecté sur le contexte (`src/broker/stealth.ts`) qui masque
+  `navigator.webdriver`, pose `window.chrome.runtime` et corrige `navigator.languages`.
+  Posé avant le script de branding pour garantir que les patches sont en place avant tout
+  code de page. `rebrowser-playwright-core` couvrait déjà la couche CDP ; ces ajouts
+  couvrent les signaux JS-level restants.
+
 ## [Unreleased]
 
 ### Modifié

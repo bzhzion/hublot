@@ -14,6 +14,7 @@ import { BrokerRequest, BrokerResponse, ConsoleLogEntry, FindMatch, NetworkLogEn
 import { ensureAuthToken, isAuthorized } from './auth.js';
 import { isValidLabel } from '../shared/validate.js';
 import { TITLE_PREFIX_SCRIPT } from './branding.js';
+import { STEALTH_SCRIPT } from './stealth.js';
 import { generateToken, readRemoteConfig, startRemoteWeb, stopRemoteWeb, writeRemoteConfig, RemoteConfig } from './remoteWeb.js';
 import type { Server as HttpServer } from 'http';
 
@@ -137,6 +138,14 @@ async function launchContext(): Promise<BrowserContext> {
   const commonOptions = {
     headless: false,
     viewport: null,
+    args: [
+      '--disable-blink-features=AutomationControlled',
+      // Risque accepté (usage personnel, environnement contrôlé) : réduit
+      // l'empreinte d'automatisation au prix d'un affaiblissement du bac à
+      // sable et de l'isolation d'origine.
+      '--no-sandbox',
+      '--disable-web-security',
+    ],
   };
   // Ordre de repli : Chrome système (le plus courant) -> Edge système
   // (toujours présent sur Windows) -> Chromium téléchargé par Playwright
@@ -530,6 +539,11 @@ export async function runBroker(): Promise<void> {
   authToken = ensureAuthToken(TOKEN_FILE);
   const server = startServer();
   context = await launchContext();
+
+  // Patches anti-détection JS (navigator.webdriver, window.chrome, etc.).
+  // Posé avant le branding : les patches doivent être en place avant tout
+  // code de page, le titre est cosmétique et peut venir après.
+  await context.addInitScript(STEALTH_SCRIPT).catch(() => undefined);
 
   // Préfixe « ◉ Hublot — » sur le titre de chaque page. Posé sur le CONTEXTE
   // et non page par page : il s'applique donc aussi aux onglets créés plus
