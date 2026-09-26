@@ -7,6 +7,7 @@ import { spawn } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Command } from 'commander';
+import { version } from '../../package.json';
 import { isBrokerReady, isBrokerRunning, sendRequest } from './client.js';
 import { BrokerResponse } from '../shared/types.js';
 import { HUBLOT_HOME, BROKER_LOG_FILE } from '../shared/paths.js';
@@ -37,7 +38,10 @@ function runningAsSea(): boolean {
 }
 
 const program = new Command();
-program.name('hublot').description('Broker + CLI pour un Chromium visible partagé entre agents').version('0.1.0');
+program
+  .name('hublot')
+  .description('Chrome visible et persistant, partagé entre agents IA — un onglet par label, depuis n\'importe quel shell')
+  .version(version);
 
 // Commande cachée, jamais documentée ni appelée à la main : c'est le point
 // d'entrée que le binaire empaqueté (SEA) utilise pour lancer la logique

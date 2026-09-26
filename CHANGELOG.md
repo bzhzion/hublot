@@ -67,6 +67,15 @@ L'historique git reste la source de vérité pour ce qui précède.
     voulus** (plantage de Chrome, crash du broker, redémarrage machine). C'est un filet
     de récupération, pas une session qu'on reprend d'un jour sur l'autre.
 
+## [0.1.8] - 2026-09-26
+
+### Corrigé
+
+- **`hublot --version` affichait toujours `0.1.0`** : la version était codée en dur dans
+  `src/cli/index.ts`. Elle est désormais lue depuis `package.json` à la compilation, que la CI
+  patche déjà avant de builder. La description de `hublot --help` a été réécrite pour un
+  lecteur humain.
+
 ## [Unreleased]
 
 ## [0.1.6] - 2026-09-18
