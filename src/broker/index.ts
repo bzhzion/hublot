@@ -138,6 +138,11 @@ async function launchContext(): Promise<BrowserContext> {
   const commonOptions = {
     headless: false,
     viewport: null,
+    // Playwright injecte --enable-automation par défaut, ce qui affiche la
+    // bannière "Chrome est contrôlé par un logiciel de test automatisé" et
+    // positionne des signaux d'automatisation détectés par Cloudflare. On
+    // l'exclut explicitement.
+    ignoreDefaultArgs: ['--enable-automation'],
     args: [
       '--disable-blink-features=AutomationControlled',
       // Risque accepté (usage personnel, environnement contrôlé).

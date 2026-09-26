@@ -96,6 +96,19 @@ L'historique git reste la source de vérité pour ce qui précède.
     et comportementales, non adressées volontairement (usage personnel, pas besoin de bypass
     des systèmes anti-bot en production).
 
+## [0.1.10] - 2026-09-26
+
+### Corrigé
+
+- **`ignoreDefaultArgs: ['--enable-automation']` ajouté aux options de lancement** :
+  Playwright injecte `--enable-automation` par défaut, ce qui affiche la bannière
+  "Chrome est contrôlé par un logiciel de test automatisé" et positionne des signaux
+  d'automatisation détectables par Cloudflare Turnstile. Ce signal était plus fort que
+  `--disable-blink-features=AutomationControlled` : retirer `--disable-web-security`
+  (v0.1.9) avait réduit la surface, mais la bannière restait visible et le challenge
+  Cloudflare persistait. En l'excluant explicitement, la bannière disparaît et le profil
+  Chrome se comporte comme un Chrome ordinaire du point de vue des protections anti-bot.
+
 ## [Unreleased]
 
 ## [0.1.6] - 2026-09-18
