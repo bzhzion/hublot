@@ -22,8 +22,6 @@ L'historique git reste la source de vérité pour ce qui précède.
   code de page. `rebrowser-playwright-core` couvrait déjà la couche CDP ; ces ajouts
   couvrent les signaux JS-level restants.
 
-## [Unreleased]
-
 ### Modifié
 
 - **`actions/checkout` et `actions/setup-node` passent en v7** dans les workflows : les versions
@@ -31,7 +29,6 @@ L'historique git reste la source de vérité pour ce qui précède.
   changements de rupture de ces majeures ont été lus et confrontés au parc, aucun ne s'y applique,
   et les 11 runners de l'org sont en 2.336.0 ou mieux, au-dessus du minimum 2.327.1 qu'exigent
   `checkout` v5 et `setup-node` v5. Vérifié par un build iOS réel avant propagation.
-
 
 ### Corrigé
 
@@ -69,6 +66,8 @@ L'historique git reste la source de vérité pour ce qui précède.
   - Conséquence à connaître : `restorePersistedTabs` ne couvre que les arrêts **non
     voulus** (plantage de Chrome, crash du broker, redémarrage machine). C'est un filet
     de récupération, pas une session qu'on reprend d'un jour sur l'autre.
+
+## [Unreleased]
 
 ## [0.1.6] - 2026-09-18
 
