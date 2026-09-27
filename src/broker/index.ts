@@ -227,6 +227,37 @@ function resolveFrame(page: Page, frameUrlSubstring?: string): Page | Frame {
   return frame;
 }
 
+// `locator.click()` de Playwright téléporte le curseur en un seul geste au
+// centre exact de l'élément avant de cliquer : un mouvement de souris que
+// personne ne produit, et un signal que les protections comportementales
+// (Cloudflare Turnstile en particulier) lisent directement, indépendamment
+// des signaux JS-level déjà masqués. On simule ici une trajectoire en
+// plusieurs étapes vers un point légèrement excentré du centre, avec un
+// temps de pause avant et pendant l'appui, façon mouvement humain.
+async function humanClick(page: Page, target: Page | Frame, selector: string): Promise<void> {
+  const locator = target.locator(selector);
+  await locator.scrollIntoViewIfNeeded();
+  const box = await locator.boundingBox();
+  if (!box) {
+    // Élément non mesurable (ex. display:contents) : repli sur le clic standard.
+    await locator.click();
+    return;
+  }
+  const jitterX = (Math.random() - 0.5) * Math.min(box.width * 0.3, 10);
+  const jitterY = (Math.random() - 0.5) * Math.min(box.height * 0.3, 10);
+  const targetX = box.x + box.width / 2 + jitterX;
+  const targetY = box.y + box.height / 2 + jitterY;
+  const startX = Math.max(0, targetX - 80 + Math.random() * 160);
+  const startY = Math.max(0, targetY - 80 + Math.random() * 160);
+  await page.mouse.move(startX, startY);
+  await page.waitForTimeout(30 + Math.random() * 70);
+  await page.mouse.move(targetX, targetY, { steps: 10 + Math.floor(Math.random() * 10) });
+  await page.waitForTimeout(60 + Math.random() * 140);
+  await page.mouse.down();
+  await page.waitForTimeout(20 + Math.random() * 60);
+  await page.mouse.up();
+}
+
 async function handle(req: BrokerRequest): Promise<BrokerResponse> {
   if ('label' in req && !isValidLabel(req.label)) {
     return { ok: false, error: 'label invalide : lettres/chiffres/tirets/underscores uniquement, 64 caracteres max, doit commencer par un caractere alphanumerique' };
@@ -267,7 +298,7 @@ async function handle(req: BrokerRequest): Promise<BrokerResponse> {
 
     case 'click': {
       const entry = requireTab(req.label);
-      await resolveFrame(entry.page, req.frame).locator(req.selector).click();
+      await humanClick(entry.page, resolveFrame(entry.page, req.frame), req.selector);
       return { ok: true };
     }
 

@@ -109,6 +109,24 @@ L'historique git reste la source de vérité pour ce qui précède.
   Cloudflare persistait. En l'excluant explicitement, la bannière disparaît et le profil
   Chrome se comporte comme un Chrome ordinaire du point de vue des protections anti-bot.
 
+## [0.1.11] - 2026-09-27
+
+### Ajouté
+
+- **Clic simulé avec trajectoire de souris (`humanClick`)** : `locator.click()` de Playwright
+  téléporte le curseur en un seul geste au centre exact de l'élément avant de cliquer, un
+  mouvement qu'aucun humain ne produit et que les protections comportementales (Cloudflare
+  Turnstile en particulier) lisent directement, indépendamment des signaux JS-level déjà
+  masqués. `src/broker/index.ts` simule désormais une trajectoire en plusieurs étapes vers un
+  point légèrement excentré du centre de l'élément, avec des pauses avant et pendant l'appui.
+  - ⚠️ **Investigation menée en parallèle sur un blocage Cloudflare persistant sur Indeed
+    (v0.1.9/v0.1.10), et ce correctif n'en est PAS la cause identifiée** : un Chrome flambant
+    neuf, profil jamais touché par un agent, se fait rebloquer dès qu'on s'y connecte via
+    Google — signe d'une protection anti-fraude côté Indeed sur les sessions authentifiées,
+    qui viserait n'importe quel navigateur piloté par automatisation. Le clic simulé reste une
+    amélioration légitime et générale pour d'autres sites à protection comportementale, gardée
+    pour cette raison et non comme correctif du cas Indeed.
+
 ## [Unreleased]
 
 ## [0.1.6] - 2026-09-18
