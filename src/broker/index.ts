@@ -145,8 +145,6 @@ async function launchContext(): Promise<BrowserContext> {
     ignoreDefaultArgs: ['--enable-automation'],
     args: [
       '--disable-blink-features=AutomationControlled',
-      // Risque accepté (usage personnel, environnement contrôlé).
-      '--no-sandbox',
     ],
   };
   // Ordre de repli : Chrome système (le plus courant) -> Edge système

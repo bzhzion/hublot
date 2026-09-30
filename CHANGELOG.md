@@ -127,6 +127,23 @@ L'historique git reste la source de vérité pour ce qui précède.
     amélioration légitime et générale pour d'autres sites à protection comportementale, gardée
     pour cette raison et non comme correctif du cas Indeed.
 
+## [0.1.12] - 2026-09-30
+
+### Retiré
+
+- **`--no-sandbox` retiré des arguments de lancement Chrome.** Ajouté en 0.1.7 dans le même lot
+  que `--disable-blink-features=AutomationControlled` et `--disable-web-security`, sans besoin
+  fonctionnel réel : un réflexe copié de configurations CI/Docker où Chrome tourne en root, pas
+  une nécessité sur Windows en utilisateur normal. Il déclenchait la bannière Chrome native
+  "Vous utilisez un flag de ligne de commande non pris en charge : --no-sandbox. La stabilité
+  et la sécurité en seront affectées."
+  - ⚠️ **Cette bannière n'est pas un signal lisible en JS par une page** (c'est une infobar
+    Chrome, pas du DOM), donc son retrait n'a aucun effet sur la détection Cloudflare déjà
+    traitée en 0.1.9/0.1.10 — c'est un nettoyage indépendant, pour la stabilité et l'absence
+    d'avertissement visuel, pas un correctif anti-bot de plus.
+  - Testé en local (broker lancé directement, hors installateur) : démarrage normal, navigation
+    fonctionnelle, bannière absente.
+
 ## [Unreleased]
 
 ## [0.1.6] - 2026-09-18
