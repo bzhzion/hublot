@@ -7,8 +7,7 @@ name: Publier sur winget
 # des mainteneurs externes. Pas quelque chose qui doit partir a chaque tag,
 # surtout pendant une serie de builds de test.
 #
-# PREREQUIS non remplis a ce jour (voir manifests/b/Breizhzion/Hublot/ et le
-# README, section Distribution) :
+# PREREQUIS non remplis a ce jour (voir manifests/b/Breizhzion/Hublot/) :
 #   - Une premiere soumission MANUELLE a microsoft/winget-pkgs doit avoir ete
 #     faite et mergee (wingetcreate new, PR ouverte a la main). Tant que ce
 #     n'est pas fait, `wingetcreate update` echoue puisqu'il n'y a rien a

@@ -146,6 +146,13 @@ L'historique git reste la source de vérité pour ce qui précède.
 
 ## [Unreleased]
 
+### Modifié
+
+- **README réduit à ce qui sert à un utilisateur** (419 lignes ramenées à ~140) : installation
+  Windows et Linux, commandes groupées par usage, accès web distant, emplacement des fichiers. Les
+  notes de développement (empaquetage SEA, pièges Inno Setup, CI de release, squelette winget) en
+  ont été retirées, et la mention « Windows uniquement », fausse depuis le paquet apt, a disparu.
+
 ## [0.1.6] - 2026-09-18
 
 ### Ajouté

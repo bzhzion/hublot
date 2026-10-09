@@ -2,7 +2,7 @@
 // via le mode natif Node.js "Single Executable Applications" (SEA, depuis
 // Node 20+).
 //
-// Étapes (documentées aussi dans le README, section Distribution) :
+// Étapes :
 //   1. Bundle dist/cli/index.js (+ tout ce qu'il importe, SAUF playwright-core,
 //      voir plus bas pourquoi) en un seul fichier CommonJS via esbuild.
 //   2. Génère la config SEA (sea-config.json) et le blob (sea-prep.blob) via
