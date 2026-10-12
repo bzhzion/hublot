@@ -166,7 +166,8 @@ L'historique git reste la source de vérité pour ce qui précède.
   (`scripts/ecritures-disque.json`) doit correspondre au code. **Prouvé rouge** par trois mutations
   (une écriture, un nom non documenté, une connexion sortante). Il a d'abord laissé passer un nom
   générique parce que `.png` figurait dans un lien d'icône de l'en-tête : la comparaison porte
-  désormais sur le texte visible seulement.
+  désormais sur le texte visible seulement. Un fichier de cache Python (`.pyc`) avait été commité
+  par erreur avec lui : retiré, et `__pycache__/` et `*.pyc` sont désormais ignorés.
 
 ### Modifié
 
