@@ -22,15 +22,19 @@
     "createConnection(": 1
   },
   "cli/index.ts": {
-    "LOCALAPPDATA": 1,
     "mkdirSync": 1,
     "openSync": 1,
     "spawn(": 1
   },
+  "shared/logRotate.ts": {
+    "renameSync": 1
+  },
   "shared/paths.ts": {
     "LOCALAPPDATA": 1,
     "homedir()": 1,
+    "mkdirSync": 1,
     "process.env.TEMP": 1,
+    "renameSync": 1,
     "tmpdir()": 1
   }
 }

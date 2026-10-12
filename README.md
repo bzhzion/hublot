@@ -111,15 +111,15 @@ jeton ; `hublot web off` l'arrête et **efface le jeton**.
 ## Où sont les fichiers
 
 Tout est dans un seul dossier : `%LOCALAPPDATA%\hublot` sous Windows. Sous Linux, où `LOCALAPPDATA`
-n'est pas définie, c'est `~/AppData/Local/hublot`.
+n'est pas définie, c'est `~/.config/hublot` (`$XDG_CONFIG_HOME/hublot` si défini). Avant 0.1.13 c'était `~/AppData/Local/hublot`, ancien dossier déplacé tel quel au premier lancement.
 
 | Quoi | Fichier |
 |------|---------|
 | Profil du navigateur (cookies, mots de passe enregistrés) | `profile\` |
 | Jeton qui autorise le CLI à parler au broker (créé au premier démarrage, jamais renouvelé) | `token` |
 | Onglets ouverts (étiquette et URL), pour les retrouver après un plantage | `tabs.json` |
-| Réglages de l'accès web distant, jeton compris | `remote.json` |
-| Journal, utile si `hublot start` ne répond pas | `broker.log` |
+| Réglages de l'accès web distant, jeton compris (0600 sous Linux) | `remote.json` |
+| Journal, utile si `hublot start` ne répond pas (plafonné : au-delà de 1 Mo, mis de côté en `broker.log.1`) | `broker.log` |
 | Captures d'écran, jamais supprimées par Hublot | `%TEMP%\hublot-screenshots\<étiquette>-<horodatage>.png` |
 
 Hublot n'écoute que sur `127.0.0.1` et exige le jeton à chaque commande : il n'est pas joignable depuis

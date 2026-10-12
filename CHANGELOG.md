@@ -10,6 +10,26 @@ Ce fichier est créé le 2026-09-05, après la mise en service : les évolutions
 pas reconstituées, ce qui serait de la réécriture d'historique plutôt que de la documentation.
 L'historique git reste la source de vérité pour ce qui précède.
 
+## [Unreleased]
+
+### Corrigé
+
+- **Linux : le dossier de données n'est plus `~/AppData/Local/hublot`**, un chemin de style Windows
+  (`LOCALAPPDATA` n'existe pas) : c'est `$XDG_CONFIG_HOME/hublot`, sinon `~/.config/hublot`. Un
+  dossier laissé à l'ancien endroit est **déplacé tel quel** au premier lancement, profil et
+  connexions compris, seulement si le nouveau n'existe pas encore. Windows inchangé.
+- **`remote.json` est écrit en `0600`** (il porte le jeton de l'accès web distant) ; un fichier
+  existant est resserré à sa prochaine écriture. Avant, il suivait l'`umask` et d'autres comptes
+  locaux pouvaient le lire. Sans effet sous Windows, où le dossier du profil fait foi.
+- **`broker.log` est borné** : au-delà de 1 Mio il est mis de côté en `broker.log.1` (une seule
+  génération), soit environ 2 Mio au plus. Il grossissait sans limite.
+- Le message « le broker ne répond pas » nomme le vrai chemin du journal.
+
+Prouvé : 5 tests (`test/stockage.test.mjs`), dont celui des permissions **exécuté sous Linux**
+(ignoré sous Windows) et **prouvé rouge** en retirant `mode` et `chmod` du code compilé. La
+politique de confidentialité et le README décrivent déjà ce comportement (« 0.1.13 ») : ils
+partent avec le prochain tag.
+
 ## [0.1.7] - 2026-09-26
 
 ### Ajouté

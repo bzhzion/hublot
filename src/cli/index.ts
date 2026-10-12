@@ -11,6 +11,7 @@ import { version } from '../../package.json';
 import { isBrokerReady, isBrokerRunning, sendRequest } from './client.js';
 import { BrokerResponse } from '../shared/types.js';
 import { HUBLOT_HOME, BROKER_LOG_FILE } from '../shared/paths.js';
+import { rotateLog } from '../shared/logRotate.js';
 import { isValidLabel } from '../shared/validate.js';
 
 // Meme regle que le broker (defense en profondeur) : echouer tot avec un
@@ -98,6 +99,7 @@ program
       // logique dans le nouveau process.
       const brokerArgs = runningAsSea() ? ['__broker'] : [path.join(__dirname, '..', 'broker', 'index.js')];
       fs.mkdirSync(HUBLOT_HOME, { recursive: true });
+      rotateLog(BROKER_LOG_FILE);
       const logFd = fs.openSync(BROKER_LOG_FILE, 'a');
       const child = spawn(process.execPath, brokerArgs, {
         detached: true,
@@ -115,7 +117,7 @@ program
         return;
       }
     }
-    console.error('Le broker ne répond pas après 15s. Vérifier %LOCALAPPDATA%/hublot/broker.log ou relancer manuellement.');
+    console.error(`Le broker ne répond pas après 15s. Vérifier ${BROKER_LOG_FILE} ou relancer manuellement.`);
     process.exit(1);
   });
 

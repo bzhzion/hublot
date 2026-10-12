@@ -71,7 +71,7 @@
         remote web view, which is off by default. Each is described below.
       </p>
       <p class="tutorial-footnote">
-        Describes Hublot 0.1.12. This page covers the program, not this website.
+        Describes Hublot 0.1.13. This page covers the program, not this website.
         Last updated: 2026-10-08.
       </p>
     </div>
@@ -85,8 +85,10 @@
     <div class="panel-body">
       <p class="lede-small">
         Hublot keeps its files in one folder: <code>%LOCALAPPDATA%\hublot</code> on Windows. On
-        Linux, where <code>LOCALAPPDATA</code> is not defined, it falls back to
-        <code>~/AppData/Local/hublot</code>. Screenshots go to the system temporary folder.
+        Linux it is <code>$XDG_CONFIG_HOME/hublot</code>, usually <code>~/.config/hublot</code>
+        (versions before 0.1.13 used <code>~/AppData/Local/hublot</code>; the first run of a newer
+        version moves that folder, profile included, to the new place). Screenshots go to the
+        system temporary folder.
       </p>
 
       <div class="platform-grid">
@@ -119,16 +121,19 @@
           <span class="platform-code accent-brass">REMOTE</span>
           <p><code>remote.json</code>: the settings of the remote web view: whether it is on, the address it
              listens on, and its token. Written by <code>hublot web on</code>, and again by
-             <code>hublot web off</code>, which turns it off and <strong>erases the token</strong>. No
-             permissions are set on this file, so on Linux it follows your <code>umask</code> and other
-             local accounts may be able to read it.</p>
+             <code>hublot web off</code>, which turns it off and <strong>erases the token</strong>. It is
+             written with owner-only permissions (<code>0600</code>) on Linux, and an older file is
+             tightened the next time it is written. Before 0.1.13 no permissions were set, so other
+             local accounts could read it depending on your <code>umask</code>. On Windows it relies on
+             the permissions of your profile folder.</p>
         </article>
 
         <article class="platform-card">
           <span class="platform-code accent-teal">LOG</span>
           <p><code>broker.log</code>: the diagnostic messages the broker prints, such as which browser it
-             found or why it failed to start. It is not a browsing log. It is appended to and never
-             rotated, so you can delete it at any time.</p>
+             found or why it failed to start. It is not a browsing log. It is appended to, and
+             once it passes 1 MiB it is set aside as <code>broker.log.1</code> (one previous copy
+             kept), so it stays under about 2 MiB. You can delete both at any time.</p>
         </article>
 
         <article class="platform-card">
@@ -242,7 +247,7 @@
         </li>
         <li>
           Delete the <code>hublot</code> folder (<code>%LOCALAPPDATA%\hublot</code>, or
-          <code>~/AppData/Local/hublot</code> on Linux): that removes the profile, the token, the
+          <code>~/.config/hublot</code> on Linux): that removes the profile, the token, the
           open-tab list, the remote settings and the log. Delete <code>hublot-screenshots</code> in the
           temporary folder as well. A new token is created the next time the broker starts.
         </li>

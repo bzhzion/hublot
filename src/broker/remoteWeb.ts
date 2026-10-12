@@ -29,7 +29,15 @@ export function readRemoteConfig(file: string): RemoteConfig {
 
 export function writeRemoteConfig(file: string, config: RemoteConfig): void {
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, JSON.stringify(config, null, 2));
+  // Le fichier porte le jeton d'accès : propriétaire seul. `mode` ne joue qu'à la
+  // création, donc chmod aussi pour resserrer un fichier écrit par une version
+  // antérieure (sans effet sous Windows, où le dossier du profil fait foi).
+  fs.writeFileSync(file, JSON.stringify(config, null, 2), { mode: 0o600 });
+  try {
+    fs.chmodSync(file, 0o600);
+  } catch {
+    // système de fichiers sans permissions POSIX
+  }
 }
 
 export function generateToken(): string {
