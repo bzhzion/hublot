@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hublot · Privacy Policy</title>
+<meta name="description" content="Hublot privacy policy: no telemetry and no outbound connection of its own. What it writes to disk, where, how it is protected, how to remove it, and what the optional remote web view exposes." />
+<link rel="icon" href="assets/favicon.ico" sizes="48x48" />
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+<link rel="apple-touch-icon" sizes="180x180" href="assets/icon-180.png" />
+<link rel="canonical" href="https://hublot.breizhzion.com/privacy" />
+<link rel="preconnect" href="https://cdn.breizhzion.com" />
+<link href="https://cdn.breizhzion.com/fonts/hublot-fonts.css" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<a class="skip-link" href="#contenu">Skip to main content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="/">
+      <img src="assets/hublot-mark-color.svg" alt="" class="brand-mark" aria-hidden="true" />
+      <span class="brand-name">Hublot</span>
+    </a>
+    <button
+      id="nav-toggle"
+      class="nav-toggle"
+      type="button"
+      aria-expanded="false"
+      aria-controls="topnav"
+      aria-label="Open navigation"
+    >
+      <svg class="nav-toggle-icon nav-toggle-icon--waves" aria-hidden="true" viewBox="0 0 22 16" width="22" height="16">
+        <path d="M1,2.5 Q6,-0.5 11,2.5 T21,2.5" />
+        <path d="M1,8 Q6,5 11,8 T21,8" />
+        <path d="M1,13.5 Q6,10.5 11,13.5 T21,13.5" />
+      </svg>
+      <svg class="nav-toggle-icon nav-toggle-icon--close" aria-hidden="true" viewBox="0 0 22 16" width="22" height="16">
+        <path d="M2,1 L20,15" />
+        <path d="M20,1 L2,15" />
+      </svg>
+    </button>
+    <nav class="topnav" id="topnav" aria-label="Main navigation">
+      <a href="#overview">Overview</a>
+      <a href="#stored">Stored data</a>
+      <a href="#remote">Remote access</a>
+      <a href="#third-parties">Third parties</a>
+      <a href="#removal">Removal</a>
+      <a class="topnav-repo" href="/">Back to Hublot</a>
+    </nav>
+  </div>
+</header>
+
+<main id="contenu">
+
+  <section id="overview" class="panel" aria-labelledby="overview-title">
+    <div class="panel-head">
+      <span class="panel-mark" aria-hidden="true">◍</span>
+      <h2 id="overview-title">Nothing collected, nothing sent</h2>
+    </div>
+    <div class="panel-body">
+      <p class="lede-small">
+        Hublot collects no data and sends none anywhere. The program makes <strong>no outbound
+        network connection of its own</strong>: no telemetry, no usage statistics, no update check.
+        Everything it keeps stays on your machine, in the places listed below.
+      </p>
+      <p>
+        Three things can still carry data further, and none of them is Hublot's own code: the
+        browser it drives and the sites you open in it, the AI agent that calls it, and the optional
+        remote web view, which is off by default. Each is described below.
+      </p>
+      <p class="tutorial-footnote">
+        Describes Hublot 0.1.12. This page covers the program, not this website.
+        Last updated: 2026-10-08.
+      </p>
+    </div>
+  </section>
+
+  <section id="stored" class="panel" aria-labelledby="stored-title">
+    <div class="panel-head">
+      <span class="panel-mark" aria-hidden="true">◍</span>
+      <h2 id="stored-title">What Hublot stores, and where</h2>
+    </div>
+    <div class="panel-body">
+      <p class="lede-small">
+        Hublot keeps its files in one folder: <code>%LOCALAPPDATA%\hublot</code> on Windows. On
+        Linux, where <code>LOCALAPPDATA</code> is not defined, it falls back to
+        <code>~/AppData/Local/hublot</code>. Screenshots go to the system temporary folder.
+      </p>
+
+      <div class="platform-grid">
+        <article class="platform-card">
+          <span class="platform-code accent-teal">PROFILE</span>
+          <p><code>profile\</code>: the persistent profile of the browser Hublot drives. Cookies, saved
+             passwords, history, local storage and cache, all written by Chrome or Edge themselves.
+             This is what lets a login survive a restart. Hublot does not read these files, the
+             browser does, and it sets their permissions, not Hublot.</p>
+        </article>
+
+        <article class="platform-card">
+          <span class="platform-code accent-brass">TOKEN</span>
+          <p><code>token</code>: a random 256-bit token (64 hexadecimal characters), created the first
+             time the broker starts. Every command must present it to reach the broker, which
+             listens on <code>127.0.0.1:47563</code> only. It is written with owner-only permissions
+             (<code>0600</code>) on Linux. On Windows it relies on the permissions your profile folder
+             already has: your account, SYSTEM and administrators. It is never rotated, and
+             <code>hublot stop</code> does not delete it.</p>
+        </article>
+
+        <article class="platform-card">
+          <span class="platform-code accent-teal">TABS</span>
+          <p><code>tabs.json</code>: the label, id and current URL of each open tab, so the tabs can come
+             back after a crash or a reboot. URLs can carry sensitive parameters. Closing a tab
+             removes its entry. No permissions are set on this file.</p>
+        </article>
+
+        <article class="platform-card">
+          <span class="platform-code accent-brass">REMOTE</span>
+          <p><code>remote.json</code>: the settings of the remote web view: whether it is on, the address it
+             listens on, and its token. Written by <code>hublot web on</code>, and again by
+             <code>hublot web off</code>, which turns it off and <strong>erases the token</strong>. No
+             permissions are set on this file, so on Linux it follows your <code>umask</code> and other
+             local accounts may be able to read it.</p>
+        </article>
+
+        <article class="platform-card">
+          <span class="platform-code accent-teal">LOG</span>
+          <p><code>broker.log</code>: the diagnostic messages the broker prints, such as which browser it
+             found or why it failed to start. It is not a browsing log. It is appended to and never
+             rotated, so you can delete it at any time.</p>
+        </article>
+
+        <article class="platform-card">
+          <span class="platform-code accent-brass">SCREENSHOTS</span>
+          <p><code>hublot-screenshots\</code> in the system temporary folder: one image for each
+             <code>hublot screenshot</code>, named <code>&lt;tab label&gt;-&lt;timestamp&gt;.png</code>. It shows
+             whatever the page showed, including pages you are logged in to. Hublot never deletes
+             these files.</p>
+        </article>
+      </div>
+
+      <p>
+        <strong>Kept in memory only:</strong> the console messages and the network requests (method,
+        URL, status) of each tab, capped at 500 entries each and gone when the broker stops. Page text,
+        accessibility snapshots and screenshots are handed to whoever ran the command and are not
+        stored, apart from the screenshot files above.
+      </p>
+    </div>
+  </section>
+
+  <section id="remote" class="panel" aria-labelledby="remote-title">
+    <div class="panel-head">
+      <span class="panel-mark" aria-hidden="true">◍</span>
+      <h2 id="remote-title">The optional remote web view</h2>
+    </div>
+    <div class="panel-body">
+      <p class="lede-small">
+        Off by default. <code>hublot web on --bind &lt;address&gt;</code> starts a small web page, meant
+        for a phone, that lists your open tabs (label and URL) and shows a live screenshot of the
+        one you pick. It is read-only.
+      </p>
+
+      <div class="platform-grid">
+        <article class="platform-card">
+          <span class="platform-code accent-brass">PLAIN HTTP</span>
+          <p>There is no TLS. Everything, including the token, crosses the network unencrypted.
+             Use a private address such as a Tailscale one, never <code>0.0.0.0</code> on a network
+             you do not trust.</p>
+        </article>
+
+        <article class="platform-card">
+          <span class="platform-code accent-teal">TOKEN IN THE URL</span>
+          <p>The token travels in the address (<code>?token=...</code>), so it can end up in browser
+             history and in server logs. A new token is generated each time you run
+             <code>hublot web on</code>.</p>
+        </article>
+
+        <article class="platform-card">
+          <span class="platform-code accent-brass">NO TOKEN</span>
+          <p><code>--no-token</code> opens the page to anyone who can reach the address. Screenshots can
+             show pages you are logged in to.</p>
+        </article>
+
+        <article class="platform-card">
+          <span class="platform-code accent-teal">COMES BACK</span>
+          <p>If it was on when the broker stopped, it starts again with the broker, on the same
+             address and with the same token. <code>hublot web off</code> stops it and erases the token.
+             The default address is <code>127.0.0.1:9871</code>.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="third-parties" class="panel" aria-labelledby="third-parties-title">
+    <div class="panel-head">
+      <span class="panel-mark" aria-hidden="true">◍</span>
+      <h2 id="third-parties-title">Third parties</h2>
+    </div>
+    <div class="panel-body">
+      <ol class="plate-list">
+        <li>
+          <strong>The browser.</strong> Hublot drives your installed Chrome, or Edge if Chrome is
+          missing. What those browsers send to Google or Microsoft (sync, safe browsing, updates)
+          is governed by their own privacy policies, and Hublot does not control it. If neither is
+          installed, Hublot falls back to the Chromium that Playwright can install
+          (<code>npx playwright install chromium</code>, which you run yourself and which downloads from
+          Microsoft's Playwright servers).
+        </li>
+        <li>
+          <strong>The sites you open.</strong> They see the traffic the way they would from any
+          browser.
+        </li>
+        <li>
+          <strong>The AI agent that calls Hublot.</strong> It receives the text, accessibility
+          snapshots, screenshots and network logs it asks for, and what happens to them next depends
+          on that agent and its provider. An agent can also have Hublot run JavaScript in a page
+          (<code>evaluate</code>), run code with full Node.js rights (<code>run-code-unsafe</code>) or send a
+          local file to a web page (<code>upload</code>): what those do is up to the code or the file it
+          gives them.
+        </li>
+        <li>
+          <strong>No one else.</strong> No analytics, advertising or telemetry service receives
+          anything from Hublot.
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="removal" class="panel panel--cta" aria-labelledby="removal-title">
+    <div class="panel-head">
+      <span class="panel-mark" aria-hidden="true">◍</span>
+      <h2 id="removal-title">Removing your data</h2>
+    </div>
+    <div class="panel-body">
+      <ol class="plate-list">
+        <li>
+          <code>hublot web off</code> turns the remote view off and erases its token.
+        </li>
+        <li>
+          <code>hublot stop</code> closes the browser and the broker.
+        </li>
+        <li>
+          Delete the <code>hublot</code> folder (<code>%LOCALAPPDATA%\hublot</code>, or
+          <code>~/AppData/Local/hublot</code> on Linux): that removes the profile, the token, the
+          open-tab list, the remote settings and the log. Delete <code>hublot-screenshots</code> in the
+          temporary folder as well. A new token is created the next time the broker starts.
+        </li>
+        <li>
+          <strong>Uninstalling Hublot does not delete any of this.</strong> The Windows uninstaller
+          removes the program, and its entry in your user PATH if you added one, and nothing else.
+        </li>
+      </ol>
+
+      <p class="tutorial-footnote">
+        Questions about this policy:
+        <a href="https://github.com/bzhzion/hublot/issues" target="_blank" rel="noopener">open an issue on GitHub</a>
+        or write to <a href="mailto:hublot@breizhzion.com">hublot@breizhzion.com</a>.
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <p>
+    Hublot · <a href="https://github.com/bzhzion/hublot/blob/main/LICENSE.md" target="_blank" rel="noopener">BZ&#8209;1.1 License</a>
+    (BREIZHZION Personal Use License). Personal use only.
+  </p>
+  <p class="site-footer-sub">A <a href="https://breizhzion.com" target="_blank" rel="noopener">BREIZHZION</a> project.</p>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

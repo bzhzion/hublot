@@ -17,5 +17,8 @@ without pre-wiring anything.
 - [Site vitrine](https://hublot.breizhzion.com): présentation, architecture, commandes, installation
 - [Dépôt source](https://github.com/bzhzion/hublot): code TypeScript/Node.js, releases, issues, licence BZ-1.1
 
+## Trust
+- [Privacy policy](https://hublot.breizhzion.com/privacy): no telemetry, and exactly what Hublot writes to disk, where, and how to remove it
+
 ## Optional
 - [Releases](https://github.com/bzhzion/hublot/releases): exécutable Windows signé (Azure Trusted Signing) et paquet Debian

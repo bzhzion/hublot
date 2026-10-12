@@ -34,6 +34,17 @@ jobs:
     timeout-minutes: 15
 
     steps:
+      # La politique de confidentialite doit decrire ce que le code de CETTE version ecrit sur le
+      # disque et ouvre sur le reseau. Un echec ici BLOQUE la publication : il demande une relecture
+      # de site/privacy.html, pas un contournement du controle.
+      - uses: actions/checkout@v7
+
+      - name: Politique de confidentialite a jour avec le code
+        shell: pwsh
+        run: |
+          python scripts/verifier-ecritures-disque.py
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
       - name: Retrouver l'installeur de la release
         id: release
         shell: pwsh

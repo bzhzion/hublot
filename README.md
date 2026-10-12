@@ -102,20 +102,33 @@ hublot web status
 hublot web off
 ```
 
-⚠️ Choisissez une adresse privée, typiquement votre IP Tailscale, jamais `0.0.0.0`. `--no-token`
-désactive le jeton : n'importe qui joignant l'adresse voit alors vos onglets. Le réglage survit au
-redémarrage de Hublot.
+⚠️ Choisissez une adresse privée, typiquement votre IP Tailscale, jamais `0.0.0.0`. L'accès est en
+HTTP, sans chiffrement, et le jeton circule dans l'adresse (`?token=...`) : il peut finir dans un
+historique de navigateur ou un journal de serveur. `--no-token` désactive le jeton : n'importe qui
+joignant l'adresse voit alors vos onglets. Le réglage survit au redémarrage de Hublot, avec le même
+jeton ; `hublot web off` l'arrête et **efface le jeton**.
 
 ## Où sont les fichiers
 
-| Quoi | Où (Windows) |
-|------|--------------|
-| Profil du navigateur (cookies, mots de passe enregistrés) | `%LOCALAPPDATA%\hublot\profile` |
-| Journal, utile si `hublot start` ne répond pas | `%LOCALAPPDATA%\hublot\broker.log` |
-| Captures d'écran | `%TEMP%\hublot-screenshots\` |
+Tout est dans un seul dossier : `%LOCALAPPDATA%\hublot` sous Windows. Sous Linux, où `LOCALAPPDATA`
+n'est pas définie, c'est `~/AppData/Local/hublot`.
 
-Hublot n'écoute que sur `127.0.0.1` et exige un jeton local : il n'est pas joignable depuis le réseau
-tant que vous n'activez pas l'accès web distant.
+| Quoi | Fichier |
+|------|---------|
+| Profil du navigateur (cookies, mots de passe enregistrés) | `profile\` |
+| Jeton qui autorise le CLI à parler au broker (créé au premier démarrage, jamais renouvelé) | `token` |
+| Onglets ouverts (étiquette et URL), pour les retrouver après un plantage | `tabs.json` |
+| Réglages de l'accès web distant, jeton compris | `remote.json` |
+| Journal, utile si `hublot start` ne répond pas | `broker.log` |
+| Captures d'écran, jamais supprimées par Hublot | `%TEMP%\hublot-screenshots\<étiquette>-<horodatage>.png` |
+
+Hublot n'écoute que sur `127.0.0.1` et exige le jeton à chaque commande : il n'est pas joignable depuis
+le réseau tant que vous n'activez pas l'accès web distant. Il n'envoie rien à personne : pas de
+télémétrie, pas de recherche de mise à jour.
+
+**Désinstaller Hublot ne supprime pas ces fichiers.** Pour tout effacer : `hublot stop`, puis supprimez
+le dossier `hublot` et `hublot-screenshots`. Le détail, y compris les permissions de chaque fichier, est
+dans la [politique de confidentialité](https://hublot.breizhzion.com/privacy).
 
 ## Compiler soi-même
 

@@ -146,8 +146,32 @@ L'historique git reste la source de vérité pour ce qui précède.
 
 ## [Unreleased]
 
+### Ajouté
+
+- **Politique de confidentialité** (`site/privacy.html`, publiée à `hublot.breizhzion.com/privacy`),
+  écrite d'après la lecture de tout `src/` et de `installer.iss` : aucune télémétrie ni connexion
+  sortante propre au programme, chaque fichier écrit avec son emplacement, sa protection et sa
+  suppression, l'accès web distant avec ses limites (HTTP en clair, jeton dans l'adresse), les tiers
+  (le navigateur piloté, les sites, l'agent). Demandée par anticipation : le modérateur winget de
+  BeamMeUp en a exigé une pour un outil de même nature.
+  ⚠️ **Constats faits en l'écrivant, non corrigés** : sous Linux, où `LOCALAPPDATA` n'existe pas, les
+  données vont dans `~/AppData/Local/hublot`, un chemin de style Windows ; `remote.json` est écrit
+  sans permissions, donc lisible par les autres comptes selon l'`umask`, alors que `token` est bien
+  en `0600` ; et `broker.log` n'est jamais tourné. À l'inverse, `hublot web off` efface bien le
+  jeton, ce que BeamMeUp ne fait pas.
+- **Garde-fou `scripts/verifier-ecritures-disque.py`** qui bloque la publication winget (première
+  étape de `publish-winget.yml`) et fait échouer la CI (job `politique`) quand la politique a pu
+  devenir fausse : chaque nom de fichier construit dans le code doit figurer dans le **texte visible**
+  de la page, et l'inventaire des points d'écriture, d'écoute et de connexion
+  (`scripts/ecritures-disque.json`) doit correspondre au code. **Prouvé rouge** par trois mutations
+  (une écriture, un nom non documenté, une connexion sortante). Il a d'abord laissé passer un nom
+  générique parce que `.png` figurait dans un lien d'icône de l'en-tête : la comparaison porte
+  désormais sur le texte visible seulement.
+
 ### Modifié
 
+- **Le README décrit enfin tous les fichiers** : jeton, onglets, réglages distants, chemin Linux, le
+  fait que désinstaller ne les supprime pas, et le caractère non chiffré de l'accès distant.
 - **README réduit à ce qui sert à un utilisateur** (419 lignes ramenées à ~140) : installation
   Windows et Linux, commandes groupées par usage, accès web distant, emplacement des fichiers. Les
   notes de développement (empaquetage SEA, pièges Inno Setup, CI de release, squelette winget) en

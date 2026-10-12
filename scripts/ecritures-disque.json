@@ -1,0 +1,36 @@
+{
+  "broker/auth.ts": {
+    "mkdirSync": 1,
+    "writeFileSync": 1
+  },
+  "broker/index.ts": {
+    ".listen(": 1,
+    "createServer(": 1,
+    "launchPersistentContext": 2,
+    "mkdirSync": 1,
+    "screenshot(": 3,
+    "writeFileSync": 1
+  },
+  "broker/remoteWeb.ts": {
+    ".listen(": 1,
+    "createServer(": 1,
+    "fetch(": 2,
+    "mkdirSync": 1,
+    "writeFileSync": 1
+  },
+  "cli/client.ts": {
+    "createConnection(": 1
+  },
+  "cli/index.ts": {
+    "LOCALAPPDATA": 1,
+    "mkdirSync": 1,
+    "openSync": 1,
+    "spawn(": 1
+  },
+  "shared/paths.ts": {
+    "LOCALAPPDATA": 1,
+    "homedir()": 1,
+    "process.env.TEMP": 1,
+    "tmpdir()": 1
+  }
+}

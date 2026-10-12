@@ -45,3 +45,14 @@ jobs:
           else
             ./build/hublot status
           fi
+
+  # La politique de confidentialite (site/privacy.html) doit decrire ce que le code ecrit sur le
+  # disque et ouvre sur le reseau. Le meme controle bloque aussi la publication winget
+  # (publish-winget.yml) : le lancer ici fait remonter l'ecart des le commit.
+  politique:
+    name: politique de confidentialite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Ecritures, reseau et politique
+        run: python3 scripts/verifier-ecritures-disque.py
