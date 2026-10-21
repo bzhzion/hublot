@@ -14,6 +14,38 @@ L'historique git reste la source de vérité pour ce qui précède.
 
 ## [0.1.13] - 2026-10-21
 
+### Ajouté
+
+- **Politique de confidentialité** (`site/privacy.html`, publiée à `hublot.breizhzion.com/privacy`),
+  écrite d'après la lecture de tout `src/` et de `installer.iss` : aucune télémétrie ni connexion
+  sortante propre au programme, chaque fichier écrit avec son emplacement, sa protection et sa
+  suppression, l'accès web distant avec ses limites (HTTP en clair, jeton dans l'adresse), les tiers
+  (le navigateur piloté, les sites, l'agent). Demandée par anticipation : le modérateur winget de
+  BeamMeUp en a exigé une pour un outil de même nature.
+  ⚠️ **Constats faits en l'écrivant, non corrigés** : sous Linux, où `LOCALAPPDATA` n'existe pas, les
+  données vont dans `~/AppData/Local/hublot`, un chemin de style Windows ; `remote.json` est écrit
+  sans permissions, donc lisible par les autres comptes selon l'`umask`, alors que `token` est bien
+  en `0600` ; et `broker.log` n'est jamais tourné. À l'inverse, `hublot web off` efface bien le
+  jeton, ce que BeamMeUp ne fait pas.
+- **Garde-fou `scripts/verifier-ecritures-disque.py`** qui bloque la publication winget (première
+  étape de `publish-winget.yml`) et fait échouer la CI (job `politique`) quand la politique a pu
+  devenir fausse : chaque nom de fichier construit dans le code doit figurer dans le **texte visible**
+  de la page, et l'inventaire des points d'écriture, d'écoute et de connexion
+  (`scripts/ecritures-disque.json`) doit correspondre au code. **Prouvé rouge** par trois mutations
+  (une écriture, un nom non documenté, une connexion sortante). Il a d'abord laissé passer un nom
+  générique parce que `.png` figurait dans un lien d'icône de l'en-tête : la comparaison porte
+  désormais sur le texte visible seulement. Un fichier de cache Python (`.pyc`) avait été commité
+  par erreur avec lui : retiré, et `__pycache__/` et `*.pyc` sont désormais ignorés.
+
+### Modifié
+
+- **Le README décrit enfin tous les fichiers** : jeton, onglets, réglages distants, chemin Linux, le
+  fait que désinstaller ne les supprime pas, et le caractère non chiffré de l'accès distant.
+- **README réduit à ce qui sert à un utilisateur** (419 lignes ramenées à ~140) : installation
+  Windows et Linux, commandes groupées par usage, accès web distant, emplacement des fichiers. Les
+  notes de développement (empaquetage SEA, pièges Inno Setup, CI de release, squelette winget) en
+  ont été retirées, et la mention « Windows uniquement », fausse depuis le paquet apt, a disparu.
+
 ### Corrigé
 
 - **Linux : le dossier de données n'est plus `~/AppData/Local/hublot`**, un chemin de style Windows
@@ -165,40 +197,6 @@ sont publiés avec ce tag.
     d'avertissement visuel, pas un correctif anti-bot de plus.
   - Testé en local (broker lancé directement, hors installateur) : démarrage normal, navigation
     fonctionnelle, bannière absente.
-
-## [Unreleased]
-
-### Ajouté
-
-- **Politique de confidentialité** (`site/privacy.html`, publiée à `hublot.breizhzion.com/privacy`),
-  écrite d'après la lecture de tout `src/` et de `installer.iss` : aucune télémétrie ni connexion
-  sortante propre au programme, chaque fichier écrit avec son emplacement, sa protection et sa
-  suppression, l'accès web distant avec ses limites (HTTP en clair, jeton dans l'adresse), les tiers
-  (le navigateur piloté, les sites, l'agent). Demandée par anticipation : le modérateur winget de
-  BeamMeUp en a exigé une pour un outil de même nature.
-  ⚠️ **Constats faits en l'écrivant, non corrigés** : sous Linux, où `LOCALAPPDATA` n'existe pas, les
-  données vont dans `~/AppData/Local/hublot`, un chemin de style Windows ; `remote.json` est écrit
-  sans permissions, donc lisible par les autres comptes selon l'`umask`, alors que `token` est bien
-  en `0600` ; et `broker.log` n'est jamais tourné. À l'inverse, `hublot web off` efface bien le
-  jeton, ce que BeamMeUp ne fait pas.
-- **Garde-fou `scripts/verifier-ecritures-disque.py`** qui bloque la publication winget (première
-  étape de `publish-winget.yml`) et fait échouer la CI (job `politique`) quand la politique a pu
-  devenir fausse : chaque nom de fichier construit dans le code doit figurer dans le **texte visible**
-  de la page, et l'inventaire des points d'écriture, d'écoute et de connexion
-  (`scripts/ecritures-disque.json`) doit correspondre au code. **Prouvé rouge** par trois mutations
-  (une écriture, un nom non documenté, une connexion sortante). Il a d'abord laissé passer un nom
-  générique parce que `.png` figurait dans un lien d'icône de l'en-tête : la comparaison porte
-  désormais sur le texte visible seulement. Un fichier de cache Python (`.pyc`) avait été commité
-  par erreur avec lui : retiré, et `__pycache__/` et `*.pyc` sont désormais ignorés.
-
-### Modifié
-
-- **Le README décrit enfin tous les fichiers** : jeton, onglets, réglages distants, chemin Linux, le
-  fait que désinstaller ne les supprime pas, et le caractère non chiffré de l'accès distant.
-- **README réduit à ce qui sert à un utilisateur** (419 lignes ramenées à ~140) : installation
-  Windows et Linux, commandes groupées par usage, accès web distant, emplacement des fichiers. Les
-  notes de développement (empaquetage SEA, pièges Inno Setup, CI de release, squelette winget) en
-  ont été retirées, et la mention « Windows uniquement », fausse depuis le paquet apt, a disparu.
 
 ## [0.1.6] - 2026-09-18
 
@@ -426,4 +424,3 @@ sont publiés avec ce tag.
   `pre-push` dans `.githooks/`, et le workflow `changelog-guard.yml` qui rejoue les mêmes
   contrôles en CI au moment du tag. Ce dépôt en était dépourvu alors qu'il est déployé, ce qui
   le laissait hors de la garantie que les autres ont.
-
