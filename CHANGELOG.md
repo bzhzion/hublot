@@ -12,6 +12,8 @@ L'historique git reste la source de vérité pour ce qui précède.
 
 ## [Unreleased]
 
+## [0.1.13] - 2026-10-21
+
 ### Corrigé
 
 - **Linux : le dossier de données n'est plus `~/AppData/Local/hublot`**, un chemin de style Windows
@@ -28,7 +30,7 @@ L'historique git reste la source de vérité pour ce qui précède.
 Prouvé : 5 tests (`test/stockage.test.mjs`), dont celui des permissions **exécuté sous Linux**
 (ignoré sous Windows) et **prouvé rouge** en retirant `mode` et `chmod` du code compilé. La
 politique de confidentialité et le README décrivent déjà ce comportement (« 0.1.13 ») : ils
-partent avec le prochain tag.
+sont publiés avec ce tag.
 
 ## [0.1.7] - 2026-09-26
 
