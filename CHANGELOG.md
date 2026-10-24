@@ -12,6 +12,17 @@ L'historique git reste la source de vérité pour ce qui précède.
 
 ## [Unreleased]
 
+### Modifié
+
+- **winget est mis à jour automatiquement à chaque tag**, comme BeamMeUp : le paquet
+  `Breizhzion.Hublot` a été fusionné dans `microsoft/winget-pkgs` le 2026-10-24 (PR #431232), donc
+  `publish-winget.yml` devient appelable par un nouveau job `winget` de `release-windows.yml`,
+  seulement sur un push de tag et jamais pour une préversion. Il reste lançable à la main, avec un
+  essai à blanc (`dry_run`) qui génère le manifeste sans ouvrir de PR.
+- L'installateur donné à winget est la **copie versionnée de `dl.breizhzion.com`**, celle du
+  manifeste accepté, et non plus l'asset GitHub ; son empreinte est comparée à celle de l'asset de
+  la release avant publication. Un échec de `wingetcreate` fait désormais échouer l'étape.
+
 ## [0.1.13] - 2026-10-21
 
 ### Ajouté

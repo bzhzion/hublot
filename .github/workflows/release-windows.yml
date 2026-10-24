@@ -38,6 +38,9 @@ permissions:
 
 jobs:
   build:
+    # Rendue au job `winget` ci-dessous, qui publie CETTE version et non la derniere du depot.
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     # windows-latest (GitHub-hosted), pas un runner self-hosted : ce repo est
     # destine a devenir public, meme raisonnement que beammeup (un runner
     # self-hosted exposerait l'infrastructure a un risque d'execution de code
@@ -246,3 +249,18 @@ jobs:
           aws s3 cp latest.json "s3://breizhzion-releases/hublot/latest.json" `
             --endpoint-url $r2 --content-type application/json
           if ($LASTEXITCODE -ne 0) { throw "envoi de latest.json en echec" }
+
+  # Publication winget, appelee seulement sur un push de tag, comme BeamMeUp. Un
+  # `workflow_dispatch` sert a rejouer un build : il ne doit pas rouvrir de PR sur une version
+  # deja soumise. Pour republier a la main, lancer `publish-winget.yml` directement. Jamais
+  # non plus pour une preversion (0.2.0-rc.1), que le motif de tag accepte aussi et qui n'a
+  # rien a faire dans le catalogue public. `needs: build` garantit que la release ET la copie versionnee sur dl.breizhzion.com
+  # existent ; `secrets: inherit` est obligatoire, un workflow appele ne recoit aucun secret
+  # sans lui.
+  winget:
+    needs: build
+    if: github.event_name == 'push' && !contains(needs.build.outputs.version, '-')
+    uses: ./.github/workflows/publish-winget.yml
+    with:
+      version: ${{ needs.build.outputs.version }}
+    secrets: inherit

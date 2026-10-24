@@ -1,28 +1,41 @@
 name: Publier sur winget
 
 # Calque sur bzhzion/beammeup/.github/workflows/publish-winget.yml.
-# Volontairement decouple du build (release-windows.yml) : declenchement
-# manuel uniquement, jamais automatique - publier sur winget ouvre une pull
-# request sur microsoft/winget-pkgs, depot tiers a tres fort trafic revu par
-# des mainteneurs externes. Pas quelque chose qui doit partir a chaque tag,
-# surtout pendant une serie de builds de test.
 #
-# PREREQUIS non remplis a ce jour (voir manifests/b/Breizhzion/Hublot/) :
-#   - Une premiere soumission MANUELLE a microsoft/winget-pkgs doit avoir ete
-#     faite et mergee (wingetcreate new, PR ouverte a la main). Tant que ce
-#     n'est pas fait, `wingetcreate update` echoue puisqu'il n'y a rien a
-#     mettre a jour.
-#   - Le secret WINGET_PAT (token GitHub avec droits sur le fork
-#     personnel + PR vers microsoft/winget-pkgs) n'est pas encore configure
-#     sur ce depot.
+# Appele par le job `winget` de release-windows.yml a chaque push de tag `v*.*.*`, et
+# lancable a la main (option `dry_run` pour generer le manifeste sans ouvrir de PR).
+# Automatique depuis le 2026-10-24 : le paquet Breizhzion.Hublot a ete fusionne dans
+# microsoft/winget-pkgs ce jour-la (PR #431232), donc `wingetcreate update` a enfin quelque
+# chose a mettre a jour. Avant, ce workflow etait manuel et desactive, parce qu'une
+# premiere soumission ne peut pas se faire par `update`.
+#
+# Ce que cela implique : poser un tag ouvre une pull request sur microsoft/winget-pkgs, depot
+# tiers revu par des moderateurs. D'ou le controle de la politique de confidentialite en
+# premiere etape, qui bloque la publication quand la page a pu devenir fausse.
 
 on:
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version a publier (ex: 0.2.0), doit deja avoir une Release GitHub'
+        required: true
+        type: string
+      dry_run:
+        description: 'Essai a blanc : genere le manifeste, n''ouvre AUCUNE pull request'
+        required: false
+        type: boolean
+        default: false
   workflow_dispatch:
     inputs:
       version:
         description: 'Version a publier (ex: 0.2.0), doit deja avoir une Release GitHub'
         required: true
         type: string
+      dry_run:
+        description: 'Essai a blanc : genere le manifeste, n''ouvre AUCUNE pull request'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -45,7 +58,7 @@ jobs:
           python scripts/verifier-ecritures-disque.py
           if ($LASTEXITCODE -ne 0) { exit 1 }
 
-      - name: Retrouver l'installeur de la release
+      - name: Verifier la release et la copie versionnee
         id: release
         shell: pwsh
         env:
@@ -61,16 +74,34 @@ jobs:
                     | Where-Object { $_ -like '*-setup.exe' } | Select-Object -First 1)
           if (-not $asset) { throw "Aucun installeur trouve dans la release $tag" }
           Write-Host "Tag: $tag / asset: $asset"
-          "tag=$tag" >> $env:GITHUB_OUTPUT
-          "asset=$asset" >> $env:GITHUB_OUTPUT
 
-      # Repo public : l'asset de la Release GitHub est deja une URL stable et
-      # publiquement accessible, pas besoin de bucket/CDN intermediaire.
+          # L'URL donnee a winget est la COPIE VERSIONNEE de dl.breizhzion.com, jamais le nom
+          # fixe (ecrase a chaque release, il invaliderait le SHA256 d'un manifeste deja
+          # accepte, voir docs/distribution.md du depot admin), et pas non plus l'asset GitHub :
+          # c'est l'URL du manifeste fusionne, et en changer d'une version a l'autre changerait
+          # l'origine de l'installateur sous les yeux du moderateur.
+          #
+          # Son empreinte est comparee a celle de l'asset de la release avant de la publier :
+          # l'envoi sur R2 est une autre etape d'un autre workflow, et un envoi rate ou en
+          # retard donnerait a winget un fichier qui n'est pas celui de la release.
+          $url = "https://dl.breizhzion.com/hublot/Hublot-Setup-x64-$($env:VERSION).exe"
+          gh release download $tag --repo ${{ github.repository }} --pattern $asset --output github.exe --clobber
+          Invoke-WebRequest -Uri $url -OutFile r2.exe
+          $h1 = (Get-FileHash github.exe -Algorithm SHA256).Hash
+          $h2 = (Get-FileHash r2.exe -Algorithm SHA256).Hash
+          if ($h1 -ne $h2) {
+            Write-Host "::error title=Copie versionnee differente::$url ne correspond pas a l'asset $asset de la release $tag (GitHub $h1, dl $h2)."
+            exit 1
+          }
+          Write-Host "Copie versionnee identique a l'asset de la release : $h1"
+          "url=$url" >> $env:GITHUB_OUTPUT
+
       - name: wingetcreate update
         env:
           WINGET_PAT: ${{ secrets.WINGET_PAT }}
           VERSION: ${{ inputs.version }}
-          INSTALLER_URL: https://github.com/${{ github.repository }}/releases/download/${{ steps.release.outputs.tag }}/${{ steps.release.outputs.asset }}
+          INSTALLER_URL: ${{ steps.release.outputs.url }}
+          DRY_RUN: ${{ inputs.dry_run }}
         shell: pwsh
         run: |
           # Le fork personnel prend du retard sur microsoft/winget-pkgs, depot a tres fort
@@ -97,9 +128,27 @@ jobs:
           }
 
           Invoke-WebRequest -Uri "https://aka.ms/wingetcreate/latest" -OutFile "wingetcreate.exe"
+
+          if ($env:DRY_RUN -eq 'true') {
+            $essai = Join-Path $env:RUNNER_TEMP "winget-essai"
+            .\wingetcreate.exe update Breizhzion.Hublot `
+              --version $env:VERSION `
+              --urls "$env:INSTALLER_URL" `
+              --token $env:WINGET_PAT `
+              --out $essai
+            if ($LASTEXITCODE -ne 0) { Write-Host "::error::wingetcreate update a echoue (rc=$LASTEXITCODE)"; exit 1 }
+            Get-ChildItem -Path $essai -Recurse -Filter "*.yaml" | ForEach-Object {
+              Write-Host "=== $($_.Name) ==="
+              Get-Content $_.FullName
+            }
+            Write-Host "ESSAI A BLANC : manifeste genere, aucune pull request ouverte."
+            exit 0
+          }
+
           .\wingetcreate.exe update Breizhzion.Hublot `
             --version $env:VERSION `
             --urls "$env:INSTALLER_URL" `
             --token $env:WINGET_PAT `
             --submit `
             --no-open
+          if ($LASTEXITCODE -ne 0) { Write-Host "::error::wingetcreate update a echoue (rc=$LASTEXITCODE)"; exit 1 }
