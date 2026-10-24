@@ -45,6 +45,11 @@ jobs:
     name: Mettre a jour le manifest Breizhzion.Hublot
     runs-on: windows-latest
     timeout-minutes: 15
+    env:
+      # Schema des manifestes soumis, celui qu'a exige le moderateur le 2026-10-24. Le valideur
+      # de winget ne refuse qu'une version de MAJEURE superieure a la sienne, donc le
+      # wingetcreate 1.12 l'accepte. A relever ici quand winget-pkgs en exige un plus recent.
+      MANIFEST_VERSION: 1.28.0
 
     steps:
       # La politique de confidentialite doit decrire ce que le code de CETTE version ecrit sur le
@@ -97,11 +102,11 @@ jobs:
           "url=$url" >> $env:GITHUB_OUTPUT
 
       - name: wingetcreate update
+        id: manifeste
         env:
           WINGET_PAT: ${{ secrets.WINGET_PAT }}
           VERSION: ${{ inputs.version }}
           INSTALLER_URL: ${{ steps.release.outputs.url }}
-          DRY_RUN: ${{ inputs.dry_run }}
         shell: pwsh
         run: |
           # Le fork personnel prend du retard sur microsoft/winget-pkgs, depot a tres fort
@@ -129,26 +134,83 @@ jobs:
 
           Invoke-WebRequest -Uri "https://aka.ms/wingetcreate/latest" -OutFile "wingetcreate.exe"
 
-          if ($env:DRY_RUN -eq 'true') {
-            $essai = Join-Path $env:RUNNER_TEMP "winget-essai"
-            .\wingetcreate.exe update Breizhzion.Hublot `
-              --version $env:VERSION `
-              --urls "$env:INSTALLER_URL" `
-              --token $env:WINGET_PAT `
-              --out $essai
-            if ($LASTEXITCODE -ne 0) { Write-Host "::error::wingetcreate update a echoue (rc=$LASTEXITCODE)"; exit 1 }
-            Get-ChildItem -Path $essai -Recurse -Filter "*.yaml" | ForEach-Object {
-              Write-Host "=== $($_.Name) ==="
-              Get-Content $_.FullName
-            }
-            Write-Host "ESSAI A BLANC : manifeste genere, aucune pull request ouverte."
-            exit 0
-          }
-
+          # Generation sur disque, jamais `--submit` directement : wingetcreate (1.12.13 au
+          # 2026-10-24) n'ecrit que le schema 1.12.0, `update` forcant `ManifestVersion` a sa
+          # propre valeur, alors que le moderateur a exige le schema courant sur la premiere
+          # soumission. Le champ est donc releve ci-dessous, valide, puis soumis par
+          # `wingetcreate submit`, qui ne le touche pas et recompose les en-tetes d'apres lui.
+          #
+          # ⚠️ Seul le CHAMP est releve, pas la ligne d'en-tete `# yaml-language-server`. La
+          # validation embarquee dans wingetcreate (WinGetUtil 1.12) charge son schema 1.12
+          # pour une version qu'elle ne connait pas, puis compare l'en-tete du fichier a l'`$id`
+          # de ce schema : un en-tete 1.28.0 sur le disque y ferait un ecart. Laisse en 1.12.0,
+          # il correspond, et la PR part quand meme avec un en-tete 1.28.0, recompose par
+          # `submit` d'apres le champ. Lu dans le code de winget-cli et winget-create, pas
+          # devine.
+          $dossier = Join-Path $env:RUNNER_TEMP "winget-manifeste"
           .\wingetcreate.exe update Breizhzion.Hublot `
             --version $env:VERSION `
             --urls "$env:INSTALLER_URL" `
             --token $env:WINGET_PAT `
-            --submit `
-            --no-open
+            --out $dossier
           if ($LASTEXITCODE -ne 0) { Write-Host "::error::wingetcreate update a echoue (rc=$LASTEXITCODE)"; exit 1 }
+
+          $fichiers = Get-ChildItem -Path $dossier -Recurse -Filter "*.yaml"
+          if ($fichiers.Count -ne 3) { Write-Host "::error::3 manifestes attendus, $($fichiers.Count) generes"; exit 1 }
+          foreach ($f in $fichiers) {
+            $texte = Get-Content $f.FullName -Raw
+            $texte = $texte -replace '(?m)^ManifestVersion: .*$', "ManifestVersion: $env:MANIFEST_VERSION"
+            if ($texte -notmatch "(?m)^ManifestVersion: $([regex]::Escape($env:MANIFEST_VERSION))\s*$") {
+              Write-Host "::error::ManifestVersion non releve dans $($f.Name)"; exit 1
+            }
+            Set-Content -Path $f.FullName -Value $texte -NoNewline
+            Write-Host "=== $($f.Name) ==="
+            Get-Content $f.FullName
+          }
+          "dossier=$($fichiers[0].DirectoryName)" >> $env:GITHUB_OUTPUT
+
+      # Le schema officiel fait autorite, pas notre relecture : un champ que wingetcreate
+      # ajouterait un jour et que la version relevee n'accepterait pas echoue ici, avant toute
+      # pull request.
+      - name: Outils de validation
+        shell: pwsh
+        run: python -m pip install --quiet --disable-pip-version-check pyyaml jsonschema
+
+      - name: Manifestes conformes au schema
+        shell: python
+        env:
+          DOSSIER: ${{ steps.manifeste.outputs.dossier }}
+        run: |
+          import json, os, pathlib, sys, urllib.request
+          import jsonschema, yaml
+          version = os.environ["MANIFEST_VERSION"]
+          base = ("https://raw.githubusercontent.com/microsoft/winget-cli/master/schemas/JSON/"
+                  f"manifests/v{version}/manifest.{{}}.{version}.json")
+          for f in sorted(pathlib.Path(os.environ["DOSSIER"]).glob("*.yaml")):
+              doc = yaml.safe_load(f.read_text(encoding="utf-8"))
+              # YAML lit une date nue comme un objet date, le schema attend une chaine.
+              doc = {k: (str(v) if k == "ReleaseDate" else v) for k, v in doc.items()}
+              schema = json.load(urllib.request.urlopen(base.format(doc["ManifestType"])))
+              jsonschema.validate(doc, schema)
+              print(f"{f.name} : conforme au schema {version}")
+
+      - name: Soumettre
+        if: inputs.dry_run != true
+        env:
+          WINGET_PAT: ${{ secrets.WINGET_PAT }}
+          VERSION: ${{ inputs.version }}
+          DOSSIER: ${{ steps.manifeste.outputs.dossier }}
+        shell: pwsh
+        run: |
+          .\wingetcreate.exe submit `
+            --prtitle "New version: Breizhzion.Hublot version $env:VERSION" `
+            --token $env:WINGET_PAT `
+            --no-open `
+            $env:DOSSIER
+          if ($LASTEXITCODE -ne 0) { Write-Host "::error::wingetcreate submit a echoue (rc=$LASTEXITCODE)"; exit 1 }
+
+      - name: Essai a blanc
+        if: inputs.dry_run == true
+        shell: pwsh
+        run: |
+          Write-Host "ESSAI A BLANC : manifestes generes et valides, aucune pull request ouverte."

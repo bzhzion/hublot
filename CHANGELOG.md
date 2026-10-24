@@ -22,6 +22,10 @@ L'historique git reste la source de vérité pour ce qui précède.
 - L'installateur donné à winget est la **copie versionnée de `dl.breizhzion.com`**, celle du
   manifeste accepté, et non plus l'asset GitHub ; son empreinte est comparée à celle de l'asset de
   la release avant publication. Un échec de `wingetcreate` fait désormais échouer l'étape.
+- **Manifestes soumis au schéma 1.28.0**, celui qu'a exigé le modérateur, alors que `wingetcreate`
+  (1.12.13) n'écrit que le 1.12.0 : génération sur disque, champ `ManifestVersion` relevé,
+  validation contre les schémas JSON officiels, puis `wingetcreate submit`. L'essai à blanc
+  parcourt tout sauf la soumission.
 
 ## [0.1.13] - 2026-10-21
 
