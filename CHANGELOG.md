@@ -19,6 +19,7 @@ L'historique git reste la source de vérité pour ce qui précède.
 
 ### Modifié
 
+- **Adresse de l'association : 34 rue Decomberousse, 69100 Villeurbanne** (le siège quitte le 4 rue Isabelle Sadoyan), dans `LICENSE.md`.
 - **winget est mis à jour automatiquement à chaque tag**, comme BeamMeUp : le paquet
   `Breizhzion.Hublot` a été fusionné dans `microsoft/winget-pkgs` le 2026-10-24 (PR #431232), donc
   `publish-winget.yml` devient appelable par un nouveau job `winget` de `release-windows.yml`,
